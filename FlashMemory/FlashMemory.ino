@@ -64,8 +64,8 @@
  * GetVersion()
  * -Print version of the development
  * 
- * SetStatus(Run/Offline/Edition
- * 
+ * SetStatus(Run/Offline/Edition)
+ * -Sets the status of the system
 */
 
 #include <SPI.h>
@@ -208,6 +208,25 @@ void erase_sector(unsigned int sector){//256 sectors of 4k bytes, 1 sector = 16 
   Serial.println("ready");
 }
 
+
+//***********************Working here************************************//
+void WriteEventsToFlash(Event_Type Event[]){
+  int nPage=0;
+  //Create Page header
+  char cBuffer[1632]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T'};
+  
+  
+  //Run the events loop
+  //        -Translate information of events to mem format
+  //        -add chars to the array
+  // if there is still more data loop
+  //    -Save information in memory page by page
+  //    -Clear Buffer
+  //    -Increase page number
+  //
+  //Create file tail
+  
+}
 
 
 void update_sector(unsigned int sector,word page, byte offset, byte databyte ){//256 sectors of 4k bytes, 1 sector = 16 pages
