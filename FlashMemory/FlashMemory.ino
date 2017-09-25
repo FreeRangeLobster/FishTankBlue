@@ -210,32 +210,168 @@ void erase_sector(unsigned int sector){//256 sectors of 4k bytes, 1 sector = 16 
 
 
 //***********************Working here************************************//
-void WriteEventsToFlash(Event_Type Event[]){
+void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
   int nPage=0;
+  int nBufferPointer=0;
+  
   //Create Page header
-  char cBuffer[1632]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T'};
+  char nDataBuffer[2144]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T'};  //((4 events)x(7days)x(4 outputs)+1header+tail+20Spares)*16bytes=
+  // find number of events
+  nBufferPointer=15;
+   
+  
+  Serial.print("Event ID  ");
+  Serial.println(Event[5].nID);
+
+  for(int i=0; i<nNoEvents;i++){
+  // Add start of event
+  nDataBuffer[nBufferPointer+1]=2;
+  
+  // add id number
+  nDataBuffer[nBufferPointer+2]='0';
+  nDataBuffer[nBufferPointer+3]='0';
+  nDataBuffer[nBufferPointer+4]='0';
+  // add enable state
+  nDataBuffer[nBufferPointer+5]='1';
+  
+  // add time
+  nDataBuffer[nBufferPointer+5]='1';
+  nDataBuffer[nBufferPointer+5]='1';
+  nDataBuffer[nBufferPointer+5]='1';
+  nDataBuffer[nBufferPointer+5]='1';
+  nDataBuffer[nBufferPointer+5]='1';
+  // add day
+  // add output
+  // add output state
+  // add reserved 
+  // add end of event
+  // increase counter
+ 
+  nBufferPointer=nBufferPointer+16;
+  }
+  //Find the number of events
+
+
   
   
-  //Run the events loop
-  //        -Translate information of events to mem format
-  //        -add chars to the array
-  // if there is still more data loop
+  
+ 
+  //Create file tail
+  
+  
+  
   //    -Save information in memory page by page
   //    -Clear Buffer
   //    -Increase page number
   //
-  //Create file tail
   
 }
 
+boolean IntToChar(char *cNumber, int nNumber){
+  int nTempValue1=nNumber;
+  int nTempValue2=0;
+
+//hundreds
+  if ((nTempValue1/100)>1){
+      cNumber[0]=(nTempValue1/100)+48;
+      nTempValue2=nNumber-(nTempValue1/100);
+  }
+  else{
+      cNumber[0]='0';
+  }
+
+//tens
+  if ((nTempValue2/10)>1){
+      cNumber[1]=(nTempValue2/100)+48;
+      nTempValue1=nTempValue1-(nTempValue2/10);
+  }
+  else{
+      cNumber[1]='0';
+  }
+  
+ //units
+  if (nTempValue1>1){
+      cNumber[2]=(nTempValue1)+48;
+  }
+  else{
+      cNumber[2]='0';
+  }  
+
+
+ return true;
+  
+  }
+
+boolean IntToDay(char *cDay, int nDay){
+  
+  switch(nDay){
+    case 1:
+      cDay[0]='M';
+      cDay[1]='O';
+      cDay[2]='N';
+      return true;
+    break;
+
+    case 2:
+      cDay[0]='T';
+      cDay[1]='U';
+      cDay[2]='E';
+      return true;
+    break;
+
+    case 3:
+      cDay[0]='W';
+      cDay[1]='E';
+      cDay[2]='D';
+      return true;
+    break;
+
+    case 4:
+      cDay[0]='T';
+      cDay[1]='H';
+      cDay[2]='U';
+      return true;
+    break;
+
+    case 5:
+      cDay[0]='F';
+      cDay[1]='R';
+      cDay[2]='I';
+      return true;
+    break;
+
+    case 6:
+      cDay[0]='S';
+      cDay[1]='A';
+      cDay[2]='T';
+      return true;
+    break;
+
+    case 7:
+      cDay[0]='S';
+      cDay[1]='U';
+      cDay[2]='N';
+      return true;
+    break;
+
+    default:
+      return false;
+    break;
+    
+    }
+  
+  }
+
+
+void FormatEvent(char *cEvent, int day){
+  }
 
 void update_sector(unsigned int sector,word page, byte offset, byte databyte ){//256 sectors of 4k bytes, 1 sector = 16 pages
   
   //Creates a buffer to save all the data
-  byte nDataBuffer[4096];
+  byte nDataBuffer[2144];  //((4 events)x(7days)x(4 outputs)+1header+tail+20Spares)*16bytes=
  
   
-
   //Saving back up of the sector in the buffer
 
   //Updating the new values in the buffer
@@ -284,7 +420,7 @@ void write_array(char Array[], int n){
 }
 
 
-//Working here!!!!
+
 void read_array(int Array[], int n){
   int i=0;
   Serial.println ("Hello");
@@ -667,6 +803,7 @@ void setup(void) {
   Event_Type Now;
   Channel_Type Channel;
   LoadEventsToMemory(1,Event);
+  WriteEventsToFlash(Event, 5);
   Now.nMinutes=30;
   Now.nHour=10;
   Now.nDay=1;
