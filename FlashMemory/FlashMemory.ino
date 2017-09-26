@@ -268,39 +268,46 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
 }
 
 boolean IntToChar(char *cNumber, int nNumber){
-  int nTempValue1=nNumber;
-  int nTempValue2=0;
+    int nTempValue1=nNumber;
+    int nTempValue2=0;
 
-//hundreds
-  if ((nTempValue1/100)>1){
+  //hundreds
+    if ((nTempValue1/100)>=1){
       cNumber[0]=(nTempValue1/100)+48;
-      nTempValue2=nNumber-(nTempValue1/100);
-  }
-  else{
+      nTempValue2=nNumber-((nNumber/100)*100);
+    }
+    else{
       cNumber[0]='0';
-  }
+      nTempValue2=nTempValue1;
+    }
+  
+    //Serial.print("First Char:  ");
+    //Serial.println(cNumber[0]);
+    
 
-//tens
-  if ((nTempValue2/10)>1){
-      cNumber[1]=(nTempValue2/100)+48;
-      nTempValue1=nTempValue1-(nTempValue2/10);
-  }
-  else{
+  //tens
+    if ((nTempValue2/10)>=1){
+      cNumber[1]=(nTempValue2/10)+48;
+      nTempValue1=nTempValue2-((nTempValue2/10)*10);
+    }
+    else{
       cNumber[1]='0';
-  }
-  
- //units
-  if (nTempValue1>1){
+      nTempValue1=nTempValue2;
+    }
+
+    //Serial.print("Second Char:  ");  
+    //Serial.println(cNumber[1]);
+  //units
+    if (nTempValue1>=1){
       cNumber[2]=(nTempValue1)+48;
-  }
-  else{
+    }
+    else{
       cNumber[2]='0';
-  }  
-
-
- return true;
-  
-  }
+    }  
+    //Serial.print("Last Char:  ");
+    //Serial.println(cNumber[2]);
+  return true; 
+ }
 
 boolean IntToDay(char *cDay, int nDay){
   
@@ -796,8 +803,26 @@ void setup(void) {
   Serial.println("");
   Serial.println("Ready"); 
   get_jedec_id();
-  //read_page_ascii(1);
+  char cNumber[3];
+  
+  if (IntToChar(cNumber,9)==1){
+    Serial.print("Number in Char ");
+    Serial.print(cNumber[0]);
+    Serial.print('-');
+    Serial.print(cNumber[1]);
+    Serial.print('-');
+    Serial.println(cNumber[2]);
+    }
 
+if (IntToDay(cNumber,1)==1){
+    Serial.print("Number in Char ");
+    Serial.print(cNumber[0]);
+    Serial.print('-');
+    Serial.print(cNumber[1]);
+    Serial.print('-');
+    Serial.println(cNumber[2]);
+    }
+    
   //creates an array of structures
   Event_Type Event[20];
   Event_Type Now;
