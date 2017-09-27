@@ -218,7 +218,7 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
   char nDataBuffer[2144]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T'};  //((4 events)x(7days)x(4 outputs)+1header+tail+20Spares)*16bytes=
   // find number of events
   nBufferPointer=15;
-   
+  char cNumbers[2]; 
   
   Serial.print("Event ID  ");
   Serial.println(Event[5].nID);
@@ -226,34 +226,62 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
   for(int i=0; i<nNoEvents;i++){
   // Add start of event
   nDataBuffer[nBufferPointer+1]=2;
+
   
   // add id number
-  nDataBuffer[nBufferPointer+2]='0';
-  nDataBuffer[nBufferPointer+3]='0';
-  nDataBuffer[nBufferPointer+4]='0';
-  // add enable state
-  nDataBuffer[nBufferPointer+5]='1';
+  if (IntToChar(i,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+2]=cNumbers[2];
+    nDataBuffer[nBufferPointer+3]=cNumbers[1];
+    nDataBuffer[nBufferPointer+4]=cNumbers[0];
+  }
+  Serial.print(nDataBuffer[nBufferPointer+2]);
+  Serial.print(nDataBuffer[nBufferPointer+3]);
+  Serial.print(nDataBuffer[nBufferPointer+4]);
   
-  // add time
-  nDataBuffer[nBufferPointer+5]='1';
-  nDataBuffer[nBufferPointer+5]='1';
-  nDataBuffer[nBufferPointer+5]='1';
-  nDataBuffer[nBufferPointer+5]='1';
-  nDataBuffer[nBufferPointer+5]='1';
-  // add day
+  
+  // add enable state
+  if (Event[i].bEventStatus==1){
+    nDataBuffer[nBufferPointer+5]='1';
+  }
+  else{
+      nDataBuffer[nBufferPointer+5]='0';
+  }
+
+ Serial.print(nDataBuffer[nBufferPointer+5]);
+  // add time  
+  //Min 
+ if (IntToChar(Event[i].nMinutes,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+6]=cNumbers[1];
+    nDataBuffer[nBufferPointer+7]=cNumbers[0];
+  } 
+//Hour
+  if (IntToChar(Event[i].nHour,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+8]=cNumbers[1];
+    nDataBuffer[nBufferPointer+9]=cNumbers[0];
+  }
+
+//Day
+  if (IntToDay(Event[i].nDay,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+10]=cNumbers[2];
+    nDataBuffer[nBufferPointer+11]=cNumbers[1];
+    nDataBuffer[nBufferPointer+12]=cNumbers[0];
+  }
+  
   // add output
+  nDataBuffer[nBufferPointer+13]=Event[i].nOutput+48;
   // add output state
+   nDataBuffer[nBufferPointer+14]=Event[i].nOutputState+48;
   // add reserved 
+   nDataBuffer[nBufferPointer+15]='x';
+   
   // add end of event
+   nDataBuffer[nBufferPointer+16]=3;
   // increase counter
  
   nBufferPointer=nBufferPointer+16;
   }
-  //Find the number of events
 
 
-  
-  
   
  
   //Create file tail
@@ -267,7 +295,7 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
   
 }
 
-boolean IntToChar(char *cNumber, int nNumber){
+boolean IntToChar( int nNumber,char *cNumber){
     int nTempValue1=nNumber;
     int nTempValue2=0;
 
@@ -309,7 +337,7 @@ boolean IntToChar(char *cNumber, int nNumber){
   return true; 
  }
 
-boolean IntToDay(char *cDay, int nDay){
+boolean IntToDay( int nDay,char *cDay){
   
   switch(nDay){
     case 1:
@@ -805,7 +833,7 @@ void setup(void) {
   get_jedec_id();
   char cNumber[3];
   
-  if (IntToChar(cNumber,9)==1){
+  if (IntToChar(9,cNumber)==1){
     Serial.print("Number in Char ");
     Serial.print(cNumber[0]);
     Serial.print('-');
@@ -814,7 +842,7 @@ void setup(void) {
     Serial.println(cNumber[2]);
     }
 
-if (IntToDay(cNumber,1)==1){
+if (IntToDay(1,cNumber)==1){
     Serial.print("Number in Char ");
     Serial.print(cNumber[0]);
     Serial.print('-');
