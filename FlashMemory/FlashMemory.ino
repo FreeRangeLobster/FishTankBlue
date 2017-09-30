@@ -95,7 +95,7 @@ String g_command;
 typedef struct 
   {
       int nID;
-      boolean bEventStatus;
+      int nEventStatus;
       int nMinutes;
       int nHour;
       int nDay;
@@ -109,6 +109,280 @@ typedef struct
       int nOutput;
       boolean bState;
   } Channel_Type;
+  
+Event_Type gEvent[20];
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^High Level Functions^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+// AddEvent(Day,Time, Output, state,Status)
+
+void AddEvent(Event_Type Event[],int nDay,int nHour, int nMinutes, int nOutput, int nOutputState){
+
+  int nEvents=0;
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(1,gEvent,&nEvents );
+  
+  // -Add new event into local memory
+  Event[nEvents+1].nDay=nDay;
+  Event[nEvents+1].nHour=nHour;
+  Event[nEvents+1].nMinutes=nMinutes;
+  Event[nEvents+1].nOutput=nOutput;
+  Event[nEvents+1].nOutputState=nOutputState;
+  
+  // -Save local memory to flash  
+  WriteEventsToFlash(Event, nEvents+1);
+  
+  }
+
+/* DeleteEvent This routine deletes an event from the flash memory */
+void DeleteEvent(Event_Type Event[],int nID){
+
+  int nEvents=0;
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(1,gEvent,&nEvents );
+  
+  // -Add new event into local memory
+  // Shifts events down one position
+  int i=nID;
+  for(i;i<nEvents;i++)
+  Event[i].nDay=Event[i+1].nDay;
+  Event[i].nHour=Event[i+1].nHour;
+  Event[i].nMinutes=Event[i+1].nMinutes;
+  Event[i].nOutput=Event[i+1].nOutput;
+  Event[i].nOutputState=Event[i+1].nOutputState;
+  
+  // -Save local memory to flash  
+  WriteEventsToFlash(Event, nEvents-1);
+  
+  }
+
+
+//UpdateEvent: this routine updated a position in the flash memoru
+ void UpdateEvent(Event_Type Event[],int nEventStatus ,int nID,int nDay,int nHour, int nMinutes, int nOutput, int nOutputState){
+
+  int nEvents=0;
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(1,gEvent,&nEvents );
+
+  if (nID<nEvents){
+    // -Add new event into local memory
+    Event[nID].nEventStatus=nEventStatus;
+    Event[nID].nDay=nDay;
+    Event[nID].nHour=nHour;
+    Event[nID].nMinutes=nMinutes;
+    Event[nID].nOutput=nOutput;
+    Event[nID].nOutputState=nOutputState;
+    // -Save local memory to flash  
+    WriteEventsToFlash(Event, nEvents);
+    return true;
+  }
+  else{
+    return false;  
+  }
+}
+
+
+
+/* CheckEvent(Day,Time)
+ * -Load flash events to local memory
+ * -Verify day and time
+ * -Update outputs/global variables*/
+/* DeleteEvent This routine deletes an event from the flash memory */
+void CheckEvent(Event_Type Event[],int cOutputs[],int nDay,int nHour,int nMinutes){
+
+  int nEvents=0;
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(1,gEvent,&nEvents );
+  
+  // -Add new event into local memory
+  // Shifts events down one position
+  int i=0;
+  int Temp;
+  for(i ; i<=nEvents;i++)
+
+  if ((Event[i].nDay==nDay) and (Event[i].nHour==nHour) and (Event[i].nMinutes==nMinutes) and (Event[i].nEventStatus==1)){
+      cOutputs[Event[i].nOutput]=Event[i].nOutputState;
+      return true;
+    }
+  
+  // -Save local memory to flash  
+  WriteEventsToFlash(Event, nEvents-1);
+  
+  }
+
+
+ 
+
+
+//Need to remove this one after ptrototiping 
+bool CheckForEvent(Event_Type *Now, Event_Type *Events, Channel_Type &Channel){
+  //Now hold the information NOW, in other words current day, hour and minutes
+  //Event holds the information regarding all the events in the memory
+  //Channel has te information regarding what channel needs to be updated and to what state
+   Channel.bState=1;
+  return true;
+  }
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^END of High Level Functions^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+
+//------------------------------------------Middle Level functions------------------------------
+/*
+ * WriteEventsToFlash is a procedure that recieves events as an array and 
+ * and saves them in the Flash memory. 
+ * The routine converts array data into Flash format, adds headers, tail and 
+ * finally pushes the information into the flash memory.
+ * 
+ */
+
+
+void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
+  int nPage=0;
+  int nBufferPointer=0;
+  
+  //Create Page header
+  char nDataBuffer[2144]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T'};  //((4 events)x(7days)x(4 outputs)+1header+tail+20Spares)*16bytes=
+  // find number of events
+  nBufferPointer=15;
+  char cNumbers[2]; 
+  
+  Serial.print("Event ID  ");
+  Serial.println(Event[5].nID);
+
+  for(int i=0; i<nNoEvents;i++){
+  // Add start of event
+  nDataBuffer[nBufferPointer+1]=2;
+
+  
+  // add id number
+  if (IntToChar(i,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+2]=cNumbers[2];
+    nDataBuffer[nBufferPointer+3]=cNumbers[1];
+    nDataBuffer[nBufferPointer+4]=cNumbers[0];
+  }
+  Serial.print(nDataBuffer[nBufferPointer+2]);
+  Serial.print(nDataBuffer[nBufferPointer+3]);
+  Serial.print(nDataBuffer[nBufferPointer+4]);
+  
+  
+  // add enable state
+  if (Event[i].nEventStatus==1){
+    nDataBuffer[nBufferPointer+5]='1';
+  }
+  else{
+      nDataBuffer[nBufferPointer+5]='0';
+  }
+
+ Serial.print(nDataBuffer[nBufferPointer+5]);
+  // add time  
+  //Min 
+ if (IntToChar(Event[i].nMinutes,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+6]=cNumbers[1];
+    nDataBuffer[nBufferPointer+7]=cNumbers[0];
+  } 
+//Hour
+  if (IntToChar(Event[i].nHour,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+8]=cNumbers[1];
+    nDataBuffer[nBufferPointer+9]=cNumbers[0];
+  }
+
+//Day
+  if (IntToDay(Event[i].nDay,cNumbers)==true){  
+    nDataBuffer[nBufferPointer+10]=cNumbers[2];
+    nDataBuffer[nBufferPointer+11]=cNumbers[1];
+    nDataBuffer[nBufferPointer+12]=cNumbers[0];
+  }
+  
+  // add output
+  nDataBuffer[nBufferPointer+13]=Event[i].nOutput+48;
+  // add output state
+   nDataBuffer[nBufferPointer+14]=Event[i].nOutputState+48;
+  // add reserved 
+   nDataBuffer[nBufferPointer+15]='x';
+   
+  // add end of event
+   nDataBuffer[nBufferPointer+16]=3;
+  // increase counter
+  
+  Serial.print(nBufferPointer);
+  Serial.print("   Event   ");
+  Serial.print(nDataBuffer[nBufferPointer]);
+  Serial.print(nDataBuffer[nBufferPointer+1]);
+  Serial.print(nDataBuffer[nBufferPointer+2]);
+  Serial.print(nDataBuffer[nBufferPointer+3]);
+  Serial.print(nDataBuffer[nBufferPointer+4]);
+  Serial.print(nDataBuffer[nBufferPointer+5]);
+  Serial.print(nDataBuffer[nBufferPointer+6]);
+  Serial.print(nDataBuffer[nBufferPointer+7]);
+  Serial.print(nDataBuffer[nBufferPointer+8]);
+  Serial.print(nDataBuffer[nBufferPointer+9]);
+  Serial.print(nDataBuffer[nBufferPointer+10]);
+  Serial.print(nDataBuffer[nBufferPointer+11]);
+  Serial.print(nDataBuffer[nBufferPointer+12]);
+  Serial.print(nDataBuffer[nBufferPointer+13]);
+  Serial.print(nDataBuffer[nBufferPointer+14]);
+  Serial.println(nDataBuffer[nBufferPointer+15]);
+
+  // increase counter
+  nBufferPointer=nBufferPointer+16; 
+  }
+
+
+ 
+  //Create file tail
+  nDataBuffer[nBufferPointer+1]='E';
+  nDataBuffer[nBufferPointer+2]='V';
+  nDataBuffer[nBufferPointer+3]='E';
+  nDataBuffer[nBufferPointer+4]='N';
+  nDataBuffer[nBufferPointer+5]='T';
+  nDataBuffer[nBufferPointer+6]=' ';
+  nDataBuffer[nBufferPointer+7]='F';
+  nDataBuffer[nBufferPointer+8]='I';
+  nDataBuffer[nBufferPointer+9]='L';
+  nDataBuffer[nBufferPointer+10]='E';
+  nDataBuffer[nBufferPointer+11]=' ';
+  nDataBuffer[nBufferPointer+12]='E';
+  nDataBuffer[nBufferPointer+13]='N';
+  nDataBuffer[nBufferPointer+14]='D';
+  nDataBuffer[nBufferPointer+15]=' ';
+  nDataBuffer[nBufferPointer+16]=4;
+  nBufferPointer=nBufferPointer+16;
+  
+  //    -Save information in memory page by page
+
+ int nPageFlash=0;
+ byte nOffset=0;
+
+
+ //Needs to be validated before writing to memory
+ /*for(int i=0;i<=nBufferPointer;i++){
+   if (nOffset <= 255){
+    //Save values in the page
+    write_byte(nPageFlash, nOffset,nDataBuffer[i]);
+
+    //Cleans the array for further use
+    nDataBuffer[i]=0;
+    
+    //Increase index
+    nOffset=nOffset+1;
+    }
+    else{
+      nPageFlash=nPage+1;
+      nOffset=0;
+      //Moves to the next page  
+    }
+  }*/
+ 
+}
+
+
+
+
+
 
 
 /*
@@ -182,12 +456,12 @@ void read_page(unsigned int page_number) {
 
 void read_page2(unsigned int page_number, byte *page_buffer) {
   char buf[80];
-  sprintf(buf, "command: read_page(%04xh)", page_number);
-  Serial.println(buf);
+  //sprintf(buf, "command: read_page(%04xh)", page_number);
+  //Serial.println(buf);
  
   _read_page(page_number, page_buffer);
   print_page_bytes(page_buffer);
-  Serial.println("Ready");
+  //Serial.println("Ready");
 }
 
 
@@ -209,97 +483,13 @@ void erase_sector(unsigned int sector){//256 sectors of 4k bytes, 1 sector = 16 
 }
 
 
-//***********************Working here************************************//
-void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
-  int nPage=0;
-  int nBufferPointer=0;
-  
-  //Create Page header
-  char nDataBuffer[2144]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T'};  //((4 events)x(7days)x(4 outputs)+1header+tail+20Spares)*16bytes=
-  // find number of events
-  nBufferPointer=15;
-  char cNumbers[2]; 
-  
-  Serial.print("Event ID  ");
-  Serial.println(Event[5].nID);
 
-  for(int i=0; i<nNoEvents;i++){
-  // Add start of event
-  nDataBuffer[nBufferPointer+1]=2;
-
-  
-  // add id number
-  if (IntToChar(i,cNumbers)==true){  
-    nDataBuffer[nBufferPointer+2]=cNumbers[2];
-    nDataBuffer[nBufferPointer+3]=cNumbers[1];
-    nDataBuffer[nBufferPointer+4]=cNumbers[0];
-  }
-  Serial.print(nDataBuffer[nBufferPointer+2]);
-  Serial.print(nDataBuffer[nBufferPointer+3]);
-  Serial.print(nDataBuffer[nBufferPointer+4]);
-  
-  
-  // add enable state
-  if (Event[i].bEventStatus==1){
-    nDataBuffer[nBufferPointer+5]='1';
-  }
-  else{
-      nDataBuffer[nBufferPointer+5]='0';
-  }
-
- Serial.print(nDataBuffer[nBufferPointer+5]);
-  // add time  
-  //Min 
- if (IntToChar(Event[i].nMinutes,cNumbers)==true){  
-    nDataBuffer[nBufferPointer+6]=cNumbers[1];
-    nDataBuffer[nBufferPointer+7]=cNumbers[0];
-  } 
-//Hour
-  if (IntToChar(Event[i].nHour,cNumbers)==true){  
-    nDataBuffer[nBufferPointer+8]=cNumbers[1];
-    nDataBuffer[nBufferPointer+9]=cNumbers[0];
-  }
-
-//Day
-  if (IntToDay(Event[i].nDay,cNumbers)==true){  
-    nDataBuffer[nBufferPointer+10]=cNumbers[2];
-    nDataBuffer[nBufferPointer+11]=cNumbers[1];
-    nDataBuffer[nBufferPointer+12]=cNumbers[0];
-  }
-  
-  // add output
-  nDataBuffer[nBufferPointer+13]=Event[i].nOutput+48;
-  // add output state
-   nDataBuffer[nBufferPointer+14]=Event[i].nOutputState+48;
-  // add reserved 
-   nDataBuffer[nBufferPointer+15]='x';
-   
-  // add end of event
-   nDataBuffer[nBufferPointer+16]=3;
-  // increase counter
- 
-  nBufferPointer=nBufferPointer+16;
-  }
-
-
-  
- 
-  //Create file tail
-  
-  
-  
-  //    -Save information in memory page by page
-  //    -Clear Buffer
-  //    -Increase page number
-  //
-  
-}
 
 boolean IntToChar( int nNumber,char *cNumber){
     int nTempValue1=nNumber;
     int nTempValue2=0;
 
-  //hundreds
+    //hundreds
     if ((nTempValue1/100)>=1){
       cNumber[0]=(nTempValue1/100)+48;
       nTempValue2=nNumber-((nNumber/100)*100);
@@ -313,7 +503,7 @@ boolean IntToChar( int nNumber,char *cNumber){
     //Serial.println(cNumber[0]);
     
 
-  //tens
+    //tens
     if ((nTempValue2/10)>=1){
       cNumber[1]=(nTempValue2/10)+48;
       nTempValue1=nTempValue2-((nTempValue2/10)*10);
@@ -325,7 +515,7 @@ boolean IntToChar( int nNumber,char *cNumber){
 
     //Serial.print("Second Char:  ");  
     //Serial.println(cNumber[1]);
-  //units
+    //units
     if (nTempValue1>=1){
       cNumber[2]=(nTempValue1)+48;
     }
@@ -398,27 +588,6 @@ boolean IntToDay( int nDay,char *cDay){
   }
 
 
-void FormatEvent(char *cEvent, int day){
-  }
-
-void update_sector(unsigned int sector,word page, byte offset, byte databyte ){//256 sectors of 4k bytes, 1 sector = 16 pages
-  
-  //Creates a buffer to save all the data
-  byte nDataBuffer[2144];  //((4 events)x(7days)x(4 outputs)+1header+tail+20Spares)*16bytes=
- 
-  
-  //Saving back up of the sector in the buffer
-
-  //Updating the new values in the buffer
-
-  //Writing 
-
-  
-  
-  Serial.print("erasing sector: "); Serial.println(sector);
-  _erase_sector(sector);
-  Serial.println("ready");
-}
 
 
 void read_all_pages(void) {
@@ -467,7 +636,7 @@ void read_array(int Array[], int n){
  }
 }
 
-void LoadEventsToMemory(int nIniPage,Event_Type *Event ){
+void LoadEventsToMemory(int nIniPage,Event_Type *Event, int *nEvents ){
 
    byte page_buffer[256];
    
@@ -483,6 +652,9 @@ void LoadEventsToMemory(int nIniPage,Event_Type *Event ){
   
   }
 
+
+
+//------------------------------------------Middle Level functions------------------------------
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -502,24 +674,24 @@ void read_events(byte *pbuffer, Event_Type *Event){
           i=i+1;
           //Event ID          
           Event[nIdEvent].nID=ConvertToInt(pbuffer[i],pbuffer[i+1],pbuffer[i+2]);
-          Serial.print("Event Number in integer: ");
-          Serial.println(Event[nIdEvent].nID);
+          //Serial.print("Event Number in integer: ");
+          //Serial.println(Event[nIdEvent].nID);
           i=i+3;
           //Event Status
-          Event[nIdEvent].bEventStatus=ConvertToInt('0','0',pbuffer[i]);
-          Serial.print("Event Statud: ");
-          Serial.println(Event[nIdEvent].bEventStatus);
+          Event[nIdEvent].nEventStatus=ConvertToInt('0','0',pbuffer[i]);
+          //Serial.print("Event Statud: ");
+          //Serial.println(Event[nIdEvent].nEventStatus);
           
           i=i+1;
           //Event Time Hour
            Event[nIdEvent].nHour=ConvertToInt(pbuffer[i+1],pbuffer[i],'0');
-          Serial.print("Hour: ");
-          Serial.println(Event[nIdEvent].nHour);
+          //Serial.print("Hour: ");
+          //Serial.println(Event[nIdEvent].nHour);
            i=i+2;
            //Event Time minutes
            Event[nIdEvent].nMinutes=ConvertToInt('0',pbuffer[i],pbuffer[i+1]);
-          Serial.print("Minutes: ");
-          Serial.println( Event[nIdEvent].nMinutes);
+          //Serial.print("Minutes: ");
+          //Serial.println( Event[nIdEvent].nMinutes);
            i=i+2;
            
           //Event Day
@@ -548,11 +720,11 @@ void read_events(byte *pbuffer, Event_Type *Event){
          Serial.println("EOF"); 
       }
        
-       Serial.println(i);
+      // Serial.println(i);
    }
-   Serial.print("Total Events: ");   
-   Serial.print(nIdEvent);
-   Serial.println();
+   //Serial.print("Total Events: ");   
+   //Serial.print(nIdEvent);
+   //Serial.println();
  
    //Print all the array of structure
   for(short nCounter=0; nCounter<nIdEvent;nCounter++){
@@ -561,7 +733,7 @@ void read_events(byte *pbuffer, Event_Type *Event){
     Serial.print(' ');
     Serial.print(Event[nCounter].nID);
     Serial.print(' ');
-    Serial.print(Event[nCounter].bEventStatus);
+    Serial.print(Event[nCounter].nEventStatus);
     Serial.print(' ');
      Serial.print(Event[nCounter].nHour);
     Serial.print(' ');
@@ -599,42 +771,42 @@ int ConvertToInt(char cBit2,  char cBit1, char cBit0  ){
 switch (nAsciiSum) {
     case 234:
       //Monday-> M(77)+O(79)+N(78)=234
-      Serial.println("Monday"); 
+      //Serial.println("Monday"); 
       return 1;
       break;
       
     case 238:
       //Tuesday-> //T(84)+U(85)+E(69)=238
-      Serial.println("Monday"); 
+      //Serial.println("Monday"); 
       return 2;
       break;
       
     case 224:
       //Wednesday-> //W(87)+E(69)+D(68)=224
-      Serial.println("Monday"); 
+      //Serial.println("Monday"); 
       return 3;
       break;
     
     case 241:
       //Thurday-> //T(84)+H(72)+U(85)=241
-      Serial.println("Monday"); 
+      //Serial.println("Monday"); 
       return 4;
       break;
     
     case 225:
       //Friday-> //F(70)+R(82)+I(73)=225
-      Serial.println("Monday"); 
+      //Serial.println("Monday"); 
       return 5;
       break;
     
     case 232:
       //Saturday-> //S(83)+A(65)+T(84)=232
-      Serial.println("Monday"); 
+      //Serial.println("Monday"); 
       return 6;
       break;
      
     case 246:
-      Serial.println("Monday"); 
+      //Serial.println("Monday"); 
       return 7;
       //Sunday-> //S(83)+U(85)+N(78)=246
       
@@ -650,8 +822,14 @@ switch (nAsciiSum) {
  
  
  }
+ 
 
-/*
+
+//***************************************** END OF TOP LEVEL ROUTINES***************************************
+
+
+
+/*******************************************LOW LEVEL ROUTINES**************************************
 ================================================================================
 Low-Level Device Routines
 The functions below perform the lowest-level interactions with the flash device.
@@ -781,6 +959,10 @@ void not_busy(void) {
   digitalWrite(SS, HIGH);  
 }
 
+
+/*******************************************END OF LOW LEVEL ROUTINES**************************************
+
+/*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^MAIN LOOP ROUTINES^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /*
  * This handy built-in callback function alerts the UNO
  * whenever a serial event occurs. In our case, we check
@@ -815,14 +997,7 @@ void UpdateChannel(Channel_Type &Channel){
   else{}
   }
 
-bool CheckForEvent(Event_Type *Now, Event_Type *Events, Channel_Type &Channel){
-  //Now hold the information NOW, in other words current day, hour and minutes
-  //Event holds the information regarding all the events in the memory
-  //Channel has te information regarding what channel needs to be updated and to what state
-   Channel.bState=1;
-  return true;
-  } 
-
+//(((((((((((((((((((((((((((((((((((((((((TEST HERE)))))))))))))))))))))))))))))))))))))))))))))))))))))))
 void setup(void) {
   SPI.begin();
   SPI.setDataMode(0);
@@ -854,22 +1029,27 @@ if (IntToDay(1,cNumber)==1){
   //creates an array of structures
   Event_Type Event[20];
   Event_Type Now;
+  int nEvents; 
   Channel_Type Channel;
-  LoadEventsToMemory(1,Event);
+  LoadEventsToMemory(1,Event,&nEvents );
+
+  //To verify if it is working fine.
   WriteEventsToFlash(Event, 5);
-  Now.nMinutes=30;
-  Now.nHour=10;
-  Now.nDay=1;
-  Channel.bState=0;
+//  Now.nMinutes=30;
+//  Now.nHour=10;
+//  Now.nDay=1;
+//  Channel.bState=0;
   
-  if (CheckForEvent(&Now,Event,Channel)){
-      Serial.println("Entered to the Check Event"); 
-      if(  Channel.bState==1 ){
-            Serial.println("Output=1");
-        }
-    }
+// if (CheckForEvent(&Now,Event,Channel)){
+//     Serial.println("Entered to the Check Event"); 
+//      if(  Channel.bState==1 ){
+//            Serial.println("Output=1");
+//        }
+//    }
 
 }
+/*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^END OF MAIN LOOP ROUTINES^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 
 /*
