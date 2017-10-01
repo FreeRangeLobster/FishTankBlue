@@ -697,7 +697,7 @@ void read_events(byte *pbuffer, Event_Type *Event){
            i=i+2;
            
           //Event Day
-           Event[nIdEvent].nDay=ConvertToDay(pbuffer[i],pbuffer[i+1],pbuffer[i+2]);
+           Event[nIdEvent].nDay=DayToInt(pbuffer[i],pbuffer[i+1],pbuffer[i+2]);
             i=i+3;
             
           //Event Output
@@ -766,7 +766,7 @@ int ConvertToInt(char cBit2,  char cBit1, char cBit0  ){
   return nResult;
   }
   
- int ConvertToDay(char cBit2, char cBit1, char cBit0){
+ int DayToInt(char cBit2, char cBit1, char cBit0){
  //Create the string 
  int nResult=0;
  short nAsciiSum;
@@ -1038,6 +1038,9 @@ if (IntToDay(1,cNumber)==1){
   int nEvents; 
   Channel_Type Channel;
   LoadEventsToMemory(1,Event,&nEvents );
+
+  Serial.print("No of events");
+  Serial.println(nEvents);
 
   //To verify if it is working fine.
 //  WriteEventsToFlash(Event, 5);
