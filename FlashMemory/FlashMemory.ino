@@ -620,7 +620,9 @@ void write_array(char Array[], int n){
     write_byte(1,i,Array[i]);
     i++;
  }
+ write_byte(1,i,4);
  Serial.println ("Finishing array");  
+ 
 }
 
 
@@ -666,10 +668,10 @@ void read_events(byte *pbuffer, Event_Type *Event){
   Serial.println("Read Events");
 
   //travels the array and fills an structur
-  while( (i < 300) && (pbuffer[i] != 4)){
+  while( (i < 300) && (pbuffer[i]!=0x04)){
       //Serial.print(page_buffer[i]); 
-      i=i+1;
       
+      i=i+1;    
       if(pbuffer[i]==2){
           i=i+1;
           //Event ID          
@@ -711,17 +713,21 @@ void read_events(byte *pbuffer, Event_Type *Event){
            i=i+1;
            
            if(pbuffer[i]==3){
-             Serial.println("EOE"); 
+             Serial.print("EOE Event: ");
+             Serial.println(nIdEvent);  
              nIdEvent++;
-           }
-       }
-       
-       else if(pbuffer[i]==4){
-         Serial.println("EOF"); 
-      }
-       
-      // Serial.println(i);
+           }   
+       } 
+       Serial.println(i);
    }
+
+   
+   //if(pbuffer[i]==0x04){
+   //           Serial.println("End Of File");
+   // }
+
+
+    
    //Serial.print("Total Events: ");   
    //Serial.print(nIdEvent);
    //Serial.println();
@@ -1034,7 +1040,7 @@ if (IntToDay(1,cNumber)==1){
   LoadEventsToMemory(1,Event,&nEvents );
 
   //To verify if it is working fine.
-  WriteEventsToFlash(Event, 5);
+//  WriteEventsToFlash(Event, 5);
 //  Now.nMinutes=30;
 //  Now.nHour=10;
 //  Now.nDay=1;
@@ -1104,7 +1110,10 @@ void loop(void) {
     else if (g_command.startsWith("write_events")) {
      Serial.println("Writing Events");
 
-  char MyArray[600]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T',
+
+
+
+       char MyArray[600]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T',
                         2 ,'0','0','0','1','1','0','3','0','M','O','N','1','1','x',3,
                         2 ,'0','0','1','1','1','0','3','5','T','U','E','1','0','x',3,
                         2 ,'0','0','2','1','1','0','3','5','T','U','E','1','0','x',3,
@@ -1116,7 +1125,7 @@ void loop(void) {
                         2 ,'0','0','8','1','1','0','3','5','T','U','E','1','0','x',3,
                         2 ,'0','0','9','1','1','0','3','5','T','U','E','1','0','x',3,
                         2 ,'0','1','0','1','1','0','3','5','T','U','E','1','0','x',3,
-                       'E','V','E','N','T',' ','F','I','L','E',' ','E','N','D',' ',4,
+                        4,'E','V','E','N','T','X','F','I','L','E','X','E','N','D',4,
                        'S','O','M','E','M','O','R','E','R','U','B','I','S','H','x','x'};
 
    
