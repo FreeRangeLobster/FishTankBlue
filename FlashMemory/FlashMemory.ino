@@ -642,7 +642,7 @@ void read_array(int Array[], int n){
 void LoadEventsToMemory(int nIniPage,Event_Type *Event, int *nEvents ){
 
    byte page_buffer[256];
-   
+   int NoEvents=0;
 
   //Validation of parameters
 
@@ -651,8 +651,11 @@ void LoadEventsToMemory(int nIniPage,Event_Type *Event, int *nEvents ){
 
   //Reads events from the memory buffer and loads them into 
   //into the event structure array
-  read_events(page_buffer, Event );
-  
+  read_events(page_buffer, Event,&NoEvents );
+
+  *nEvents = NoEvents;
+  //Serial.print("Load Events to memory=    ");
+  //Serial.print(NoEvents);
   }
 
 
@@ -661,7 +664,7 @@ void LoadEventsToMemory(int nIniPage,Event_Type *Event, int *nEvents ){
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void read_events(byte *pbuffer, Event_Type *Event){
+void read_events(byte *pbuffer, Event_Type *Event, int *NoEvents){
   //char buff[100];
   //Event_Type Event[20];
   int nIdEvent=0;
@@ -722,11 +725,10 @@ void read_events(byte *pbuffer, Event_Type *Event){
        Serial.println(i);
    }
 
-   
-   //if(pbuffer[i]==0x04){
-   //           Serial.println("End Of File");
-   // }
+   *NoEvents=nIdEvent;
 
+   
+  
 
     
    //Serial.print("Total Events: ");   
@@ -784,36 +786,36 @@ switch (nAsciiSum) {
       
     case 238:
       //Tuesday-> //T(84)+U(85)+E(69)=238
-      //Serial.println("Monday"); 
+      //Serial.println("Tuesday"); 
       return 2;
       break;
       
     case 224:
       //Wednesday-> //W(87)+E(69)+D(68)=224
-      //Serial.println("Monday"); 
+      //Serial.println("Wednesday"); 
       return 3;
       break;
     
     case 241:
       //Thurday-> //T(84)+H(72)+U(85)=241
-      //Serial.println("Monday"); 
+      //Serial.println("Thursday"); 
       return 4;
       break;
     
     case 225:
       //Friday-> //F(70)+R(82)+I(73)=225
-      //Serial.println("Monday"); 
+      //Serial.println("Friday"); 
       return 5;
       break;
     
     case 232:
       //Saturday-> //S(83)+A(65)+T(84)=232
-      //Serial.println("Monday"); 
+      //Serial.println("Saturday"); 
       return 6;
       break;
      
     case 246:
-      //Serial.println("Monday"); 
+      //Serial.println("Sunday"); 
       return 7;
       //Sunday-> //S(83)+U(85)+N(78)=246
       
@@ -1038,9 +1040,9 @@ if (IntToDay(1,cNumber)==1){
   Event_Type Now;
   int nEvents; 
   Channel_Type Channel;
-  LoadEventsToMemory(1,Event,&nEvents );
+  LoadEventsToMemory(0,Event,&nEvents );
 
-  Serial.print("No of events");
+  Serial.print("No of events: ");
   Serial.println(nEvents);
 
   //To verify if it is working fine.
@@ -1163,7 +1165,7 @@ void loop(void) {
                           'E','V','E','N','T',' ','F','I','L','E',' ','E','N','D',' ',4,
                           'S','O','M','E','M','O','R','E','R','U','B','I','S','H','x','x'};
                    */
-     write_array(MyArray,1);
+     write_array(MyArray,0);
      Serial.println("Done");
     }
     
