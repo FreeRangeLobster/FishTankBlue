@@ -164,6 +164,7 @@ void DeleteEvent(Event_Type Event[],int nID){
 
   int nEvents=0;
   
+  
   // -Load flash events to local memory
   LoadEventsToMemory(1,gEvent,&nEvents );
 
