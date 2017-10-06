@@ -155,7 +155,7 @@ void AddEvent(Event_Type Event[],int nDay,int nHour, int nMinutes, int nOutput, 
   
   // -Save local memory to flash  
   WriteEventsToFlash(Event, nEvents+1);
-  
+  read_page_ascii(0);
   }
 
 /* DeleteEvent This routine deletes an event from the flash memory */
@@ -351,6 +351,9 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
         
         //Incremets the buffer pointer
         nBufferPointer=nBufferPointer+16;
+        cNumbers[0]='A';
+        cNumbers[1]='A';
+        cNumbers[2]='A';
       
    }    
 
@@ -595,27 +598,58 @@ void read_all_pages(void) {
 
 void write_byte(word page, byte offset, byte databyte) {
   char buf[80];
-  sprintf(buf, "command: write_byte(%04xh, %04xh, %02xh)", page, offset, databyte);
-  Serial.println(buf);
+  //sprintf(buf, "command: write_byte(%04xh, %04xh, %02xh)", page, offset, databyte);
+  //Serial.println(buf);
   byte page_data[256];
   _read_page(page, page_data);
   page_data[offset] = databyte;
   _write_page(page, page_data);
-  Serial.println("Ready");
+  //Serial.println("Ready");
 }
 
 void write_array(char Array[], int nPage){
   int i=0;
+  int nIndexArray=0;
+  int nIndexPages=nPage;
+  int nIndexOffset=0;
+ 
   Serial.println ("Starting to write array");
   //Find
-  while(Array[i]!=4 ){   
+  while(Array[nIndexArray]!=4 ){ 
+      
+    //Serial.print (Array[nIndexArray]);
+    write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
+    nIndexArray++;
+    nIndexOffset++;
+    
+    if(nIndexOffset>=255){
+      nIndexOffset=0;
+      nIndexPages++;    
+    }    
+ }
+ write_byte(nPage,i,4);
+ Serial.println ("Finishing array writing");  
+}
+
+/*
+void write_array(char Array[], int nPage){
+  int i=0;
+ 
+  Serial.println ("Starting to write array");
+  //Find
+  while(Array[i]!=4 ){ 
+      
     Serial.print (Array[i]);
     write_byte(nPage,i,Array[i]);
     i++;
+    
  }
  write_byte(nPage,i,4);
  Serial.println ("Finishing array");  
 }
+
+
+*/
 
 
 
@@ -1031,7 +1065,7 @@ if (IntToDay(1,cNumber)==1){
   Event_Type Now;
   int nEvents; 
   Channel_Type Channel;
-  LoadEventsToMemory(0,Event,&nEvents );
+  
 
   Serial.print("No of events: ");
   Serial.println(nEvents);
@@ -1039,8 +1073,14 @@ if (IntToDay(1,cNumber)==1){
   //To verify if it is working fine.
   //WriteEventsToFlash(Event, nEvents);
 
+  LoadEventsToMemory(0,Event,&nEvents );
   
-  AddEvent(Event,3,1,21,2,1);
+  AddEvent(Event,1,4,21,2,1);
+  AddEvent(Event,2,10,55,1,1);
+  AddEvent(Event,3,7,13,3,1);
+  AddEvent(Event,4,4,14,0,1);
+
+  LoadEventsToMemory(0,Event,&nEvents );
 
   
 //  Now.nMinutes=30;
@@ -1092,6 +1132,8 @@ void loop(void) {
         word page = (word)g_command.substring(pos).toInt();
         read_page_ascii(page);
       }
+      g_command = "";
+      g_command_ready = false;
     }
 
   //JV added on 29/08/2017 to delete a 4kb sector
@@ -1104,6 +1146,8 @@ void loop(void) {
         //read_page(page);
         erase_sector(page);
       }
+      g_command = "";
+      g_command_ready = false;
     }
     
     else if (g_command.startsWith("write_events")) {
@@ -1186,6 +1230,9 @@ void loop(void) {
     else {
       Serial.print("Invalid command sent: ");
       Serial.println(g_command);
+      g_command = "";
+      g_command_ready = false;
+      Serial.flush();
     }
 done:
     g_command = "";
