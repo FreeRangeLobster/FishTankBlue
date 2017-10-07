@@ -308,12 +308,12 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
          }
         // add time  
         //Min 
-       if (IntToChar(Event[i].nHour,cNumbers)==true){  
+       if (IntToChar((int)Event[i].nHour,cNumbers)==true){  
           nDataBuffer[nBufferPointer+5]=cNumbers[1];
           nDataBuffer[nBufferPointer+6]=cNumbers[2];
         } 
       //Hour
-        if (IntToChar(Event[i].nMinutes,cNumbers)==true){  
+        if (IntToChar((int)Event[i].nMinutes,cNumbers)==true){  
           nDataBuffer[nBufferPointer+7]=cNumbers[1];
           nDataBuffer[nBufferPointer+8]=cNumbers[2];
         }
@@ -354,13 +354,13 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
         cNumbers[0]='A';
         cNumbers[1]='A';
         cNumbers[2]='A';
-      
    }    
 
       //Finishes the 
-     nDataBuffer[nBufferPointer]=4;
+   nDataBuffer[nBufferPointer+1]=4;
+   nBufferPointer++;
      // For debugging purposes
-     int j=0;
+  int j=0;
      for(j=0;j<=nBufferPointer;j++){
      Serial.print(nDataBuffer[j]);
      if (nDataBuffer[j]==2){
@@ -386,12 +386,14 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
  * bytes of data into an easier to read grid.
  */
 void print_page_bytes(byte *page_buffer) {
-  char buf[10];
+  char buf[256];
   for (int i = 0; i < 16; ++i) {
     for (int j = 0; j < 16; ++j) {
-      sprintf(buf, "%02x", page_buffer[i * 16 + j]);
-      Serial.print(buf);
+      //sprintf(buf, "%02x", page_buffer[i * 16 + j]);
+      //Serial.print(buf);
+      Serial.print('t');
     }
+    
     Serial.println();
   }
 }
@@ -451,11 +453,14 @@ void read_page(unsigned int page_number) {
 }
 
 void read_page2(unsigned int page_number, byte *page_buffer) {
-  char buf[80];
+  char buf[256];
   //sprintf(buf, "command: read_page(%04xh)", page_number);
   //Serial.println(buf);
- 
+
+ Serial.println("Reading Page...");
   _read_page(page_number, page_buffer);
+
+ Serial.println("Printing page...");
   print_page_bytes(page_buffer);
   //Serial.println("Ready");
 }
@@ -615,8 +620,7 @@ void write_array(char Array[], int nPage){
  
   Serial.println ("Starting to write array");
   //Find
-  while(Array[nIndexArray]!=4 ){ 
-      
+  while(Array[nIndexArray]!=4 ){    
     //Serial.print (Array[nIndexArray]);
     write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
     nIndexArray++;
@@ -626,31 +630,12 @@ void write_array(char Array[], int nPage){
       nIndexOffset=0;
       nIndexPages++;    
     }    
- }
- write_byte(nPage,i,4);
- Serial.println ("Finishing array writing");  
-}
-
-/*
-void write_array(char Array[], int nPage){
-  int i=0;
- 
-  Serial.println ("Starting to write array");
-  //Find
-  while(Array[i]!=4 ){ 
-      
-    Serial.print (Array[i]);
-    write_byte(nPage,i,Array[i]);
-    i++;
     
  }
- write_byte(nPage,i,4);
- Serial.println ("Finishing array");  
+ //Writes the end of file, need to valida
+ write_byte(nPage,nIndexOffset,4);
+ Serial.println ("Finishing array writing");  
 }
-
-
-*/
-
 
 
 void read_array(int Array[], int n){
@@ -678,7 +663,7 @@ void LoadEventsToMemory(int nIniPage,Event_Type *Event, int *nEvents ){
   //into the event structure array
   read_events(page_buffer, Event,&NoEvents );
 
-  *nEvents = NoEvents;
+  //*nEvents = NoEvents;
   //Serial.print("Load Events to memory=    ");
   //Serial.print(NoEvents);
   }
@@ -693,8 +678,8 @@ void read_events(byte *pbuffer, Event_Type *Event, int *NoEvents){
   //char buff[100];
   //Event_Type Event[20];
   int nIdEvent=0;
-  int i=0;
-  Serial.println("Read Events");
+  int i=0; 
+  Serial.println("Extracted Events: ");
 
   //travels the array and fills an structur
   while( (i < 300) && (pbuffer[i]!=0x04)){
@@ -742,12 +727,12 @@ void read_events(byte *pbuffer, Event_Type *Event, int *NoEvents){
            i=i+1;
            
            if(pbuffer[i]==3){
-             Serial.print("EOE Event: ");
-             Serial.println(nIdEvent);  
+            // Serial.print("EOE Event: ");
+            // Serial.println(nIdEvent);  
              nIdEvent++;
            }   
        } 
-       Serial.println(i);
+       //Serial.println(i);
    }
 
    *NoEvents=nIdEvent;
@@ -756,9 +741,9 @@ void read_events(byte *pbuffer, Event_Type *Event, int *NoEvents){
   
 
     
-   //Serial.print("Total Events: ");   
-   //Serial.print(nIdEvent);
-   //Serial.println();
+   Serial.print("Total Events: ");   
+   Serial.print(nIdEvent);
+   Serial.println();
  
    //Print all the array of structure
   for(short nCounter=0; nCounter<nIdEvent;nCounter++){
@@ -1040,47 +1025,42 @@ void setup(void) {
   Serial.println("");
   Serial.println("Ready"); 
   get_jedec_id();
-  char cNumber[3];
-  
-  if (IntToChar(9,cNumber)==1){
-    Serial.print("Number in Char ");
-    Serial.print(cNumber[0]);
-    Serial.print('-');
-    Serial.print(cNumber[1]);
-    Serial.print('-');
-    Serial.println(cNumber[2]);
-    }
+//  char cNumber[3];
 
-if (IntToDay(1,cNumber)==1){
-    Serial.print("Number in Char ");
-    Serial.print(cNumber[0]);
-    Serial.print('-');
-    Serial.print(cNumber[1]);
-    Serial.print('-');
-    Serial.println(cNumber[2]);
-    }
-    
+ // for(int i=0;i<=990;i++){
+  
+//  if (IntToChar(i,cNumber)==1){
+//    Serial.print("Number in Char ");
+//    Serial.print(cNumber[0]);
+//    Serial.print('-');
+//    Serial.print(cNumber[1]);
+//    Serial.print('-');
+//    Serial.println(cNumber[2]);
+//    }
+
+//  }
+  
   //creates an array of structures
   Event_Type Event[20];
-  Event_Type Now;
+ // Event_Type Now;
   int nEvents; 
-  Channel_Type Channel;
+ // Channel_Type Channel;
   
 
-  Serial.print("No of events: ");
-  Serial.println(nEvents);
+//  Serial.print("No of events: ");
+//  Serial.println(nEvents);
 
   //To verify if it is working fine.
   //WriteEventsToFlash(Event, nEvents);
 
   LoadEventsToMemory(0,Event,&nEvents );
   
-  AddEvent(Event,1,4,21,2,1);
-  AddEvent(Event,2,10,55,1,1);
-  AddEvent(Event,3,7,13,3,1);
-  AddEvent(Event,4,4,14,0,1);
+  //AddEvent(Event,1,4,21,2,1);
+  //AddEvent(Event,2,10,55,1,1);
+  //AddEvent(Event,3,7,13,3,1);
+  //AddEvent(Event,4,4,14,0,1);
 
-  LoadEventsToMemory(0,Event,&nEvents );
+//  LoadEventsToMemory(0,Event,&nEvents );
 
   
 //  Now.nMinutes=30;
