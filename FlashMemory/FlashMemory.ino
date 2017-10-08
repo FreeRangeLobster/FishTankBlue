@@ -122,7 +122,11 @@ void AddEvent(Event_Type Event[],int nDay,int nHour, int nMinutes, int nOutput, 
   
   // -Load flash events to local memory
   LoadEventsToMemory(0,Event,&nEvents );
-  Serial.print("Events in memory");
+  
+  Serial.println();
+  Serial.print("Events in memory - No of Events:");
+  Serial.println(nEvents);
+  
  
   
   // -Add new event into local memory into the next position available which is nEvents
@@ -389,9 +393,7 @@ void print_page_bytes(byte *page_buffer) {
   char buf[256];
   for (int i = 0; i < 16; ++i) {
     for (int j = 0; j < 16; ++j) {
-      //sprintf(buf, "%02x", page_buffer[i * 16 + j]);
-      //Serial.print(buf);
-      Serial.print('t');
+      Serial.print((char)page_buffer[i * 16 + j]);
     }
     
     Serial.println();
@@ -410,7 +412,6 @@ void print_page_ascii(byte *page_buffer) {
     Serial.println(i);  
   }
   //read_events(page_buffer);
-  
 }
 
 /*
@@ -661,9 +662,9 @@ void LoadEventsToMemory(int nIniPage,Event_Type *Event, int *nEvents ){
 
   //Reads events from the memory buffer and loads them into 
   //into the event structure array
-  read_events(page_buffer, Event,&NoEvents );
+  read_events(page_buffer, Event, &NoEvents );
 
-  //*nEvents = NoEvents;
+  *nEvents = NoEvents;
   //Serial.print("Load Events to memory=    ");
   //Serial.print(NoEvents);
   }
@@ -1053,9 +1054,9 @@ void setup(void) {
   //To verify if it is working fine.
   //WriteEventsToFlash(Event, nEvents);
 
-  LoadEventsToMemory(0,Event,&nEvents );
+  //LoadEventsToMemory(0,Event,&nEvents );
   
-  //AddEvent(Event,1,4,21,2,1);
+  AddEvent(Event,1,4,21,2,1);
   //AddEvent(Event,2,10,55,1,1);
   //AddEvent(Event,3,7,13,3,1);
   //AddEvent(Event,4,4,14,0,1);
