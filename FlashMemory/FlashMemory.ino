@@ -167,24 +167,37 @@ void AddEvent(Event_Type Event[],int nDay,int nHour, int nMinutes, int nOutput, 
 
 /* DeleteEvent This routine deletes an event from the flash memory */
 void DeleteEvent(Event_Type Event[],int nID){
-
-  int nEvents=0;
+ 
+ int nEvents=0; 
   
   // -Load flash events to local memory
-  LoadEventsToMemory(1,gEvent,&nEvents );
-  
+  LoadEventsToMemory(0,Event,&nEvents );
+
+   
   // -Add new event into local memory
   // Shifts events down one position
   int i=nID;
-  for(i;i<nEvents;i++)
-  Event[i].nDay=Event[i+1].nDay;
-  Event[i].nHour=Event[i+1].nHour;
-  Event[i].nMinutes=Event[i+1].nMinutes;
-  Event[i].nOutput=Event[i+1].nOutput;
-  Event[i].nOutputState=Event[i+1].nOutputState;
+  
+  for(i;i<nEvents;i++){
+    Event[i].nDay=Event[i+1].nDay;
+    Event[i].nHour=Event[i+1].nHour;
+    Event[i].nMinutes=Event[i+1].nMinutes;
+    Event[i].nOutput=Event[i+1].nOutput;
+    Event[i].nOutputState=Event[i+1].nOutputState;
+    Serial.println("Event Modified");
+  }
+
+
+  for(i=0;i<nEvents-1;i++){
+    Serial.println("Event ");
+  }
   
   // -Save local memory to flash  
-  WriteEventsToFlash(Event, nEvents-1);
+  
+  //WriteEventsToFlash(Event, nEvents-1);
+  Serial.println("DeleteEvent:DONE");
+  Serial.println();
+  
   
   }
 
@@ -426,7 +439,7 @@ print/debug statements for readability.
 */
 
 /* 
- * The JEDEC ID is fairly generic, I use this function to verify the setup
+ * The JEDEC ID is fairly generic, I use this function to verify the
  * is working properly.
  */
 void get_jedec_id(void) {
@@ -1062,9 +1075,10 @@ void setup(void) {
 
   //LoadEventsToMemory(0,Event,&nEvents );
   
-  AddEvent(Event,1,4,21,2,1);
-  //AddEvent(Event,2,10,55,1,1);
+ // AddEvent(Event,1,4,21,2,1);
+ // AddEvent(Event,2,10,55,1,1);
   //AddEvent(Event,3,7,13,3,1);
+  DeleteEvent(Event,2);
   //AddEvent(Event,4,4,14,0,1);
 
   read_page_ascii(0);
