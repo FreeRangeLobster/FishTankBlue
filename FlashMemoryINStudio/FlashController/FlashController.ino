@@ -1,74 +1,8 @@
-/* This arduino sketch was developed aiming to read, save, query edit, and delete 
- * data using a flash memory. it was implemented using arduino. This development
- * is a module of the fishtank embedded controller. 
- * 
- * Add Event
- * Delete Event
- * Check Event
- * Update Event
- * Show Events
- * 
- * Set Output
- * Clear Output
- * Get Version
- * Set Status
- * 
- * 
- * Links
- * Flash memory sample code and input/output voltage clamp
- * http://www.instructables.com/id/How-to-Design-with-Discrete-SPI-Flash-Memory/
- * 
- * Flash memory datasheet
- * https://cdn-shop.adafruit.com/datasheets/W25Q80BV.pdf
- * 
- * 
- * Special thanks to the designer of the template Peter J. Torelli
- * 
- * 
- // AddEvent(Day,Time, Output, state,Status)
- * -Load flash events to local memory
- * -Add new event into local memory
- * -Delete sector of flash
- * -Save local memory to flash
- * 
- * DeleteEvent(EventID)
- * -Load flash events to local memory
- * -copy last event to temporal event variable
- * -rewrite temporal variable on the event to delete
- * -Delete sector of flash
- * -Save local memory to flash
- * 
- * CheckEvent(Day,Time)
- * -Load flash events to local memory
- * -Verify day and time
- * -Update outputs/global variables
- * 
- * UpdateEvent(ID, Day,Time, Output, state,Status)
- * -Load flash events to local memory
- * -Using ID to locate event,Update event details
- * -Delete sector of flash
- * -Save local memory to flash
- * 
- * ShowEvents()
- * -Load flash events to local memory 
- * -Print events using serial
- * 
- * SetOutput(Output No)
- * -Update global variables
- * -Wait for main loop to update values
- * 
- * ClearOutput(OutputNo)
- * -Update global variables
- * -Wait for main loop to update values
- * 
- * GetVersion()
- * -Print version of the development
- * 
- * SetStatus(Run/Offline/Edition)
- * -Sets the status of the system
-*/
-
 #include <SPI.h>
+
+
+
+
 
 // SS:   pin 10
 // MOSI: pin 11
@@ -116,7 +50,7 @@ Event_Type gEvent[20];
 
 // AddEvent(Day,Time, Output, state,Status)
 
-bool AddEvent(Event_Type Event[],int nDay,int nHour, int nMinutes, int nOutput, int nOutputState){
+bool AddEvent(Event_Type Event[], int nDay, int nHour, int nMinutes, int nOutput, int nOutputState){
 
   int nEvents=0;
   

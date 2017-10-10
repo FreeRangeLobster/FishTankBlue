@@ -188,13 +188,18 @@ void DeleteEvent(Event_Type Event[],int nID){
   }
 
 
-  for(i=0;i<nEvents-1;i++){
-    Serial.println("Event ");
-  }
+ /* for(i=0;i<nEvents-1;i++){
+    Serial.print("Event Day ");
+    Serial.print(Event[i].nDay);
+    Serial.print(" Hour ");
+    Serial.print(Event[i].nHour);
+    Serial.print(" Minutes: ");
+    Serial.println(Event[i].nMinutes);
+  } */
   
   // -Save local memory to flash  
   
-  //WriteEventsToFlash(Event, nEvents-1);
+  WriteEventsToFlash(Event, nEvents-1);
   Serial.println("DeleteEvent:DONE");
   Serial.println();
   
@@ -406,24 +411,24 @@ void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
  * bytes of data into an easier to read grid.
  */
 void print_page_bytes(byte *page_buffer) {
-  char buf[256];
   for (int i = 0; i < 16; ++i) {
     for (int j = 0; j < 16; ++j) {
       Serial.print((char)page_buffer[i * 16 + j]);
     }
-    
     Serial.println();
   }
 }
 
 void print_page_ascii(byte *page_buffer) {
-  char buf[10];
+  
   for (int i = 0; i < 16; ++i) {
     for (int j = 0; j < 16; ++j) {
       //sprintf(buf, "%02x", page_buffer[i * 16 + j]);
       //sprintf(buf, "%c", page_buffer[i * 16 + j]);
       //Serial.print(buf);
-      Serial.print((char)page_buffer[i * 16 + j]);
+      Serial.print((char)page_buffer[(i * 16) + j]);
+      Serial.flush();
+      //delay(100);
     }
     Serial.println(i);  
   }
@@ -463,8 +468,10 @@ void read_page(unsigned int page_number) {
   char buf[80];
   sprintf(buf, "command: read_page(%04xh)", page_number);
   Serial.println(buf);
+  
   byte page_buffer[256];
   _read_page(page_number, page_buffer);
+  
   print_page_bytes(page_buffer);
   Serial.println("Ready");
 }
@@ -485,14 +492,13 @@ void read_page2(unsigned int page_number, byte *page_buffer) {
 
 
 void read_page_ascii(unsigned int page_number) {
-  char buf[80];
-  sprintf(buf, "command: read_page(%04xh)", page_number);
+  char buf[256];
+  sprintf(buf, "Command: read_page(%04xh)", page_number);
   Serial.println(buf);
-  byte page_buffer[256];
-  _read_page(page_number, page_buffer);  
+  byte page_buffer[260];
+  _read_page(page_number, page_buffer);
   print_page_ascii(page_buffer);
   Serial.println("Ready");
-  
 }
 
 void erase_sector(unsigned int sector){//256 sectors of 4k bytes, 1 sector = 16 pages
@@ -1061,7 +1067,7 @@ void setup(void) {
 //  }
   
   //creates an array of structures
-  Event_Type Event[20];
+  Event_Type Event[16];
  // Event_Type Now;
   int nEvents; 
  // Channel_Type Channel;
@@ -1075,15 +1081,26 @@ void setup(void) {
 
   //LoadEventsToMemory(0,Event,&nEvents );
   
- // AddEvent(Event,1,4,21,2,1);
- // AddEvent(Event,2,10,55,1,1);
-  //AddEvent(Event,3,7,13,3,1);
-  DeleteEvent(Event,2);
-  //AddEvent(Event,4,4,14,0,1);
+  AddEvent(Event,1,4,21,2,1);
+  AddEvent(Event,2,10,55,1,1);
+  AddEvent(Event,3,7,13,3,1);
+  //DeleteEvent(Event,3);
+  
+  AddEvent(Event,4,7,13,3,1);
+  AddEvent(Event,5,7,13,3,1);
+  AddEvent(Event,6,7,13,3,1);
+  AddEvent(Event,7,7,13,3,1);
+  AddEvent(Event,1,7,13,3,1);
 
-  read_page_ascii(0);
+  Serial.println("Delete Event");
+  
+ // AddEvent(Event,1,4,14,0,1);
 
-//  LoadEventsToMemory(0,Event,&nEvents );
+
+  Serial.println("Print flash");
+  //read_page_ascii(0);
+
+  //LoadEventsToMemory(0,Event,&nEvents );
 
   
 //  Now.nMinutes=30;
