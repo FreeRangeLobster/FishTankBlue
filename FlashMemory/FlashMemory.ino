@@ -1080,25 +1080,64 @@ void setup(void) {
   //WriteEventsToFlash(Event, nEvents);
 
   //LoadEventsToMemory(0,Event,&nEvents );
-  
-  AddEvent(Event,1,4,21,2,1);
-  AddEvent(Event,2,10,55,1,1);
-  AddEvent(Event,3,7,13,3,1);
-  //DeleteEvent(Event,3);
-  
-  AddEvent(Event,4,7,13,3,1);
-  AddEvent(Event,5,7,13,3,1);
-  AddEvent(Event,6,7,13,3,1);
-  AddEvent(Event,7,7,13,3,1);
-  AddEvent(Event,1,7,13,3,1);
+ 
+ /*
+  AddEvent(Event,1,1,21,1,1);
+  delay(200);
+  AddEvent(Event,2,2,22,2,0);
+  delay(200);
+  AddEvent(Event,3,3,23,3,1);
+  delay(200);
+  AddEvent(Event,4,4,24,4,1);
+  delay(200);
+  AddEvent(Event,5,5,25,1,0);
+  delay(200);
+  AddEvent(Event,6,6,25,2,1);
+  delay(200);
+  AddEvent(Event,7,7,26,3,0);
+  delay(200);
+  AddEvent(Event,1,8,27,4,1);
+  delay(200);
+  AddEvent(Event,2,9,28,1,0);
+  delay(200);
+  AddEvent(Event,3,10,29,2,1);
+  delay(200);
+  AddEvent(Event,4,11,30,3,0);
+  delay(200);
+  AddEvent(Event,5,12,31,4,1);
+  delay(200);
+  AddEvent(Event,6,13,32,1,0);
+  delay(200);
+  AddEvent(Event,7,14,33,2,1);
+  delay(1000);
 
-  Serial.println("Delete Event");
+  */
+ 
+  //DeleteEvent(Event,3);
+
+  delay(1000);
+  
+  //Serial.println("Delete Event");
   
  // AddEvent(Event,1,4,14,0,1);
 
 
-  Serial.println("Print flash");
-  //read_page_ascii(0);
+ // Serial.println("Print flash");
+  read_page_ascii(0);
+    delay(100);
+  read_page_ascii(0);
+     delay(100);
+  read_page_ascii(0);
+
+ read_page_ascii(0);
+    delay(100);
+  read_page_ascii(0);
+     delay(100);
+  read_page_ascii(0);
+  
+ // read_page_ascii(0);
+ // read_page_ascii(0);
+ // read_page_ascii(0);
 
   //LoadEventsToMemory(0,Event,&nEvents );
 
