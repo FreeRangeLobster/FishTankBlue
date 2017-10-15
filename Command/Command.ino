@@ -105,6 +105,9 @@ void _read_page(word page_number, byte *page_buffer) {
   digitalWrite(SS, HIGH);
   not_busy();
 }
+
+
+
  
 /*
  * See the timing diagram in section 9.2.21 of the
@@ -221,11 +224,36 @@ void write_byte(word page, byte offset, byte databyte) {
   //Serial.println("Ready");
 }
 
-void Write_Event(char Event[], int nPage){
+//Working here
+void Write_Event(){
+  int nPage=0;
+  int nOffset=0;
+  byte page_buffer[256];
+  int nNextAvailablePosition=0;
   
-  
+  //Search for the next position available
+  Serial.println(page_buffer[nOffset]);
+  for(nPage=0;nPage<=3;nPage++){
+    _read_page(nPage, page_buffer);
+     Serial.println("Searching in new page");
+    for(nOffset=0;nOffset<255;nOffset=nOffset+16){
+      //Serial.print(nPage);
+      //Serial.print("-");
+      Serial.print(nOffset);
+      Serial.print("-Position: ");
+      Serial.println((char)page_buffer[nOffset]);
+      if (page_buffer[nOffset]!='H'){
+          Serial.print(nOffset);
+          Serial.print("-Position Available: ");
+          nNextAvailablePosition=nOffset;
+          Serial.println(nNextAvailablePosition);
+          
+          
+        }
+      
+    }
   }
-
+}
 void write_array(char Array[], int nPage){
   int i=0;
   int nIndexArray=0;
@@ -285,7 +313,7 @@ void loop() {
       stringLenght=sCommand.length();
       Serial.println(stringLenght);
       Serial.println(sFirstParameter);
- 
+      Write_Event();
       }
 
       else if(sCommand=="ShowEvents"){
