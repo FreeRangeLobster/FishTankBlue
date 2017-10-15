@@ -1,39 +1,75 @@
-/*
-    windbond_serial_debug.cpp 
-    A simple program for the Arduino IDE to help familiarize you with
-    using WinBond flash memory; can also be used to download the entire
-    contents of a flash chip to a file via a serial port interface.
-    
-    Important bits of the code: the low-level flash functions (which 
-    implement the timing diagrams in the datasheet), and a simple 
-    serial-port command interface that allows you to talk to your 
-    UNO with any generic terminal application (even the command line).
-    
-    Copyright 2014, Peter J. Torelli
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>   
-
-
-Revisions:
-    rev 2 - 21-SEP-2014.
-    User 'fiaskow' pointed out that driving the WEL instruction after
-    program and erase w/o waiting for the op to finish may be corrupting
-    execution. Removed this code (also not needed b/c the WEL is already
-    cleared after page write or chip erase).
+/* This arduino sketch was developed aiming to read, save, query edit, and delete 
+ * data using a flash memory. it was implemented using arduino. This development
+ * is a module of the fishtank embedded controller. 
+ * 
+ * Add Event
+ * Delete Event
+ * Check Event
+ * Update Event
+ * Show Events
+ * 
+ * Set Output
+ * Clear Output
+ * Get Version
+ * Set Status
+ * 
+ * 
+ * Links
+ * Flash memory sample code and input/output voltage clamp
+ * http://www.instructables.com/id/How-to-Design-with-Discrete-SPI-Flash-Memory/
+ * 
+ * Flash memory datasheet
+ * https://cdn-shop.adafruit.com/datasheets/W25Q80BV.pdf
+ * 
+ * 
+ * Special thanks to the designer of the template Peter J. Torelli
+ * 
+ * 
+ * AddEvent(Day,Time, Output, state,Status)
+ * -Load flash events to local memory
+ * -Add new event into local memory
+ * -Delete sector of flash
+ * -Save local memory to flash
+ * 
+ * DeleteEvent(EventID)
+ * -Load flash events to local memory
+ * -copy last event to temporal event variable
+ * -rewrite temporal variable on the event to delete
+ * -Delete sector of flash
+ * -Save local memory to flash
+ * 
+ * CheckEvent(Day,Time)
+ * -Load flash events to local memory
+ * -Verify day and time
+ * -Update outputs/global variables
+ * 
+ * UpdateEvent(ID, Day,Time, Output, state,Status)
+ * -Load flash events to local memory
+ * -Using ID to locate event,Update event details
+ * -Delete sector of flash
+ * -Save local memory to flash
+ * 
+ * ShowEvents()
+ * -Load flash events to local memory 
+ * -Print events using serial
+ * 
+ * SetOutput(Output No)
+ * -Update global variables
+ * -Wait for main loop to update values
+ * 
+ * ClearOutput(OutputNo)
+ * -Update global variables
+ * -Wait for main loop to update values
+ * 
+ * GetVersion()
+ * -Print version of the development
+ * 
+ * SetStatus(Run/Offline/Edition)
+ * -Sets the status of the system
 */
 
 #include <SPI.h>
+
 // SS:   pin 10
 // MOSI: pin 11
 // MISO: pin 12
@@ -47,6 +83,7 @@ Revisions:
 #define WB_READ_DATA          0x03
 #define WB_PAGE_PROGRAM       0x02
 #define WB_JEDEC_ID           0x9f
+#define WB_SECTOR_ERASE       0x20
 
 /* 
  * These global variables enable assembly of the user serial 
@@ -55,31 +92,359 @@ Revisions:
 boolean g_command_ready(false);
 String g_command;
 
+typedef struct 
+  {
+      int nID;
+      int nEventStatus;
+      int nMinutes;
+      int nHour;
+      int nDay;
+      int nOutput;
+      int nOutputState;
+      int nRes;
+  } Event_Type;
+
+typedef struct 
+  {
+      int nOutput;
+      boolean bState;
+  } Channel_Type;
+  
+Event_Type gEvent[20];
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^High Level Functions^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+// AddEvent(Day,Time, Output, state,Status)
+
+void AddEvent(Event_Type Event[],int nDay,int nHour, int nMinutes, int nOutput, int nOutputState){
+
+  int nEvents=0;
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(0,Event,&nEvents );
+  
+  //Serial.println();
+  //Serial.print("Events in memory - No of Events:");
+  //Serial.println(nEvents);
+  
+ 
+  
+  // -Add new event into local memory into the next position available which is nEvents
+  //Because the index starts in 0
+  Event[nEvents].nDay=nDay;
+  Event[nEvents].nHour=nHour;
+  Event[nEvents].nMinutes=nMinutes;
+  Event[nEvents].nOutput=nOutput;
+  Event[nEvents].nOutputState=nOutputState;
+
+  /*int i=0;
+  for(i=0;i<=nEvents;i++){
+    Serial.print("AddEvent number");
+    Serial.print(i);
+    Serial.print(" ");
+    Serial.print(Event[i].nDay);
+    Serial.print(" ");    
+    Serial.print(Event[i].nHour);
+    Serial.print(" ");
+    Serial.print(Event[i].nMinutes);
+    Serial.print(" ");
+    Serial.print(Event[i].nOutput);
+    Serial.print(" ");
+    Serial.print(Event[i].nOutputState);
+    Serial.println();
+    
+    }*/
+
+  Serial.println("New Event loaded");
+  
+  // -Save local memory to flash  
+  WriteEventsToFlash(Event, nEvents+1);
+
+  Serial.println("AddEvent:DONE");
+  Serial.println();
+  
+  }
+
+/* DeleteEvent This routine deletes an event from the flash memory */
+void DeleteEvent(Event_Type Event[],int nID){
+ 
+ int nEvents=0; 
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(0,Event,&nEvents );
+
+   
+  // -Add new event into local memory
+  // Shifts events down one position
+  int i=nID;
+  
+  for(i;i<nEvents;i++){
+    Event[i].nDay=Event[i+1].nDay;
+    Event[i].nHour=Event[i+1].nHour;
+    Event[i].nMinutes=Event[i+1].nMinutes;
+    Event[i].nOutput=Event[i+1].nOutput;
+    Event[i].nOutputState=Event[i+1].nOutputState;
+    Serial.println("Event Modified");
+  }
+
+
+ /* for(i=0;i<nEvents-1;i++){
+    Serial.print("Event Day ");
+    Serial.print(Event[i].nDay);
+    Serial.print(" Hour ");
+    Serial.print(Event[i].nHour);
+    Serial.print(" Minutes: ");
+    Serial.println(Event[i].nMinutes);
+  } */
+  
+  // -Save local memory to flash  
+  
+  WriteEventsToFlash(Event, nEvents-1);
+  Serial.println("DeleteEvent:DONE");
+  Serial.println();
+  
+  
+  }
+
+
+//UpdateEvent: this routine updated a position in the flash memoru
+ void UpdateEvent(Event_Type Event[],int nEventStatus ,int nID,int nDay,int nHour, int nMinutes, int nOutput, int nOutputState){
+
+  int nEvents=0;
+  
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(1,gEvent,&nEvents );
+
+  if (nID<nEvents){
+    // -Add new event into local memory
+    Event[nID].nEventStatus=nEventStatus;
+    Event[nID].nDay=nDay;
+    Event[nID].nHour=nHour;
+    Event[nID].nMinutes=nMinutes;
+    Event[nID].nOutput=nOutput;
+    Event[nID].nOutputState=nOutputState;
+    // -Save local memory to flash  
+    WriteEventsToFlash(Event, nEvents);
+    return true;
+  }
+  else{
+    return false;  
+  }
+
+
+  
+}
+
+
+
+/* CheckEvent(Day,Time)
+ * -Load flash events to local memory
+ * -Verify day and time
+ * -Update outputs/global variables*/
+/* DeleteEvent This routine deletes an event from the flash memory */
+void CheckEvent(Event_Type Event[],int cOutputs[],int nDay,int nHour,int nMinutes){
+
+  int nEvents=0;
+  
+  // -Load flash events to local memory
+  LoadEventsToMemory(1,gEvent,&nEvents );
+  
+  // -Add new event into local memory
+  // Shifts events down one position
+  int i=0;
+  int Temp;
+  for(i ; i<=nEvents;i++)
+
+  if ((Event[i].nDay==nDay) and (Event[i].nHour==nHour) and (Event[i].nMinutes==nMinutes) and (Event[i].nEventStatus==1)){
+      cOutputs[Event[i].nOutput]=Event[i].nOutputState;
+      return true;
+    }
+  
+  // -Save local memory to flash  
+  WriteEventsToFlash(Event, nEvents-1);
+  
+  }
+
+
+ 
+
+
+//Need to remove this one after ptrototiping 
+bool CheckForEvent(Event_Type *Now, Event_Type *Events, Channel_Type &Channel){
+  //Now hold the information NOW, in other words current day, hour and minutes
+  //Event holds the information regarding all the events in the memory
+  //Channel has te information regarding what channel needs to be updated and to what state
+   Channel.bState=1;
+  return true;
+  }
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^END of High Level Functions^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+
+//------------------------------------------Middle Level functions------------------------------
+/*
+ * WriteEventsToFlash is a procedure that recieves events as an array and 
+ * and saves them in the Flash memory. 
+ * The routine converts array data into Flash format, adds headers, tail and 
+ * finally pushes the information into the flash memory.
+ * 
+ */
+
+
+void WriteEventsToFlash(Event_Type Event[], int nNoEvents){
+  int nPage=0;
+  int nBufferPointer=0;
+  
+  //Create Page header
+  char nDataBuffer[256]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T'};  //((4 events)x(7days)x(4 outputs)+1header+tail+20Spares)*16bytes=
+  // char nDataBuffer[600];
+  // find number of events
+  
+  char cNumbers[2]; 
+  int nTemp=0;
+  int nTemp2=0;
+  
+  Serial.print("Events to save in Flash: ");
+  Serial.println(nNoEvents);
+
+  nBufferPointer=16;
+
+   for(int i=0; i<nNoEvents;i++){
+      
+      if (IntToChar(i,cNumbers)==true){  
+            // Add start of event
+            nDataBuffer[nBufferPointer+0]=2;
+            // add id number
+            nDataBuffer[nBufferPointer+1]=cNumbers[0];
+            nDataBuffer[nBufferPointer+2]=cNumbers[1];
+            nDataBuffer[nBufferPointer+3]=cNumbers[2];
+            //Serial.print("Event in char ");
+            //Serial.print(cNumbers[2]);
+            //Serial.print(cNumbers[1]);
+            //Serial.print(cNumbers[0]);
+         }
+         // add enable state
+         if (Event[i].nEventStatus==1){
+                nDataBuffer[nBufferPointer+4]='1';
+         }
+         else{
+                nDataBuffer[nBufferPointer+4]='0';
+         }
+        // add time  
+        //Min 
+       if (IntToChar((int)Event[i].nHour,cNumbers)==true){  
+          nDataBuffer[nBufferPointer+5]=cNumbers[1];
+          nDataBuffer[nBufferPointer+6]=cNumbers[2];
+        } 
+      //Hour
+        if (IntToChar((int)Event[i].nMinutes,cNumbers)==true){  
+          nDataBuffer[nBufferPointer+7]=cNumbers[1];
+          nDataBuffer[nBufferPointer+8]=cNumbers[2];
+        }
+      
+      //Day
+        if (IntToDay(Event[i].nDay,cNumbers)==true){  
+          nDataBuffer[nBufferPointer+9]=cNumbers[0];
+          nDataBuffer[nBufferPointer+10]=cNumbers[1];
+          nDataBuffer[nBufferPointer+11]=cNumbers[2];
+        }
+        
+        //Output number
+        if (IntToChar(Event[i].nOutput,cNumbers)==true){  
+          nDataBuffer[nBufferPointer+12]=cNumbers[2];
+          //Serial.print("The eventt Value: ");
+          //Serial.print(Event[i].nOutput);
+          //Serial.print("The Converted: ");
+          //Serial.println(cNumbers[2]);
+        }
+        
+        //Output State
+        if (IntToChar(Event[i].nOutputState,cNumbers)==true){  
+          nDataBuffer[nBufferPointer+13]=cNumbers[2];
+          //Serial.print("The eventt Value: ");
+          //Serial.print(Event[i].nOutputState);
+          //Serial.print("The Converted: ");
+          //Serial.println(cNumbers[2]);
+        }
+        
+        //Reserved bit
+        nDataBuffer[nBufferPointer+14]='1';
+        
+        //End of event
+        nDataBuffer[nBufferPointer+15]=3;
+        
+        //Incremets the buffer pointer
+        nBufferPointer=nBufferPointer+16;
+        cNumbers[0]='A';
+        cNumbers[1]='A';
+        cNumbers[2]='A';
+   }    
+
+      //Finishes the 
+   nDataBuffer[nBufferPointer+1]=4;
+   nBufferPointer++;
+     // For debugging purposes
+ /* int j=0;
+     for(j=0;j<=nBufferPointer;j++){
+     Serial.print(nDataBuffer[j]);
+     if (nDataBuffer[j]==2){
+      
+      Serial.println();
+      }
+     //delay(300); 
+  }*/
+
+  //Deletes the sector
+  erase_sector(0);
+
+
+  //Writes the value in memory
+  write_array(nDataBuffer,0);
+  
+  
+} 
+
+
 /*
  * print_page_bytes() is a simple helperf function that formats 256
  * bytes of data into an easier to read grid.
  */
 void print_page_bytes(byte *page_buffer) {
-  char buf[10];
   for (int i = 0; i < 16; ++i) {
     for (int j = 0; j < 16; ++j) {
-      sprintf(buf, "%02x", page_buffer[i * 16 + j]);
-      Serial.print(buf);
+      Serial.print((char)page_buffer[i * 16 + j]);
     }
     Serial.println();
   }
 }
 
+void print_page_ascii(byte *page_buffer) {
+  
+  for (int i = 0; i < 16; ++i) {
+    for (int j = 0; j < 16; ++j) {
+      //sprintf(buf, "%02x", page_buffer[i * 16 + j]);
+      //sprintf(buf, "%c", page_buffer[i * 16 + j]);
+      //Serial.print(buf);
+      Serial.print((char)page_buffer[(i * 16) + j]);
+      Serial.flush();
+      //delay(100);
+    }
+    Serial.println(i);  
+  }
+  //read_events(page_buffer);
+}
+
 /*
 ================================================================================
-User Interface Routines
+User Interface Routinesread_eventsread_events
 The functions below map to user commands. They wrap the low-level calls with 
 print/debug statements for readability.
 ================================================================================
 */
 
 /* 
- * The JEDEC ID is fairly generic, I use this function to verify the setup
+ * The JEDEC ID is fairly generic, I use this function to verify the
  * is working properly.
  */
 void get_jedec_id(void) {
@@ -103,11 +468,152 @@ void read_page(unsigned int page_number) {
   char buf[80];
   sprintf(buf, "command: read_page(%04xh)", page_number);
   Serial.println(buf);
+  
   byte page_buffer[256];
   _read_page(page_number, page_buffer);
+  
   print_page_bytes(page_buffer);
   Serial.println("Ready");
 }
+
+void read_page2(unsigned int page_number, byte *page_buffer) {
+  char buf[256];
+  //sprintf(buf, "command: read_page(%04xh)", page_number);
+  //Serial.println(buf);
+
+ Serial.println("Reading Page");
+  _read_page(page_number, page_buffer);
+
+ //Serial.println("Printing page...");
+  //print_page_bytes(page_buffer);
+ 
+  //Serial.println("Ready");
+}
+
+
+void read_page_ascii(unsigned int page_number) {
+  char buf[256];
+  sprintf(buf, "Command: read_page(%04xh)", page_number);
+  Serial.println(buf);
+  byte page_buffer[260];
+  _read_page(page_number, page_buffer);
+  print_page_ascii(page_buffer);
+  Serial.println("Ready");
+}
+
+void erase_sector(unsigned int sector){//256 sectors of 4k bytes, 1 sector = 16 pages
+  Serial.print("erasing sector: "); Serial.println(sector);
+  _erase_sector(sector);
+  Serial.println("ready");
+}
+
+
+
+
+boolean IntToChar( int nNumber,char *cNumber){
+    int nTempValue1=nNumber;
+    int nTempValue2=0;
+
+    //hundreds
+    if ((nTempValue1/100)>=1){
+      cNumber[0]=(nTempValue1/100)+48;
+      nTempValue2=nNumber-((nNumber/100)*100);
+    }
+    else{
+      cNumber[0]='0';
+      nTempValue2=nTempValue1;
+    }
+  
+    //Serial.print("First Char:  ");
+    //Serial.println(cNumber[0]);
+    
+
+    //tens
+    if ((nTempValue2/10)>=1){
+      cNumber[1]=(nTempValue2/10)+48;
+      nTempValue1=nTempValue2-((nTempValue2/10)*10);
+    }
+    else{
+      cNumber[1]='0';
+      nTempValue1=nTempValue2;
+    }
+
+    //Serial.print("Second Char:  ");  
+    //Serial.println(cNumber[1]);
+    //units
+    if (nTempValue1>=1){
+      cNumber[2]=(nTempValue1)+48;
+    }
+    else{
+      cNumber[2]='0';
+    }  
+    //Serial.print("Last Char:  ");
+    //Serial.println(cNumber[2]);
+  return true; 
+ }
+
+boolean IntToDay( int nDay,char *cDay){
+  
+  switch(nDay){
+    case 1:
+      cDay[0]='M';
+      cDay[1]='O';
+      cDay[2]='N';
+      return true;
+    break;
+
+    case 2:
+      cDay[0]='T';
+      cDay[1]='U';
+      cDay[2]='E';
+      return true;
+    break;
+
+    case 3:
+      cDay[0]='W';
+      cDay[1]='E';
+      cDay[2]='D';
+      return true;
+    break;
+
+    case 4:
+      cDay[0]='T';
+      cDay[1]='H';
+      cDay[2]='U';
+      return true;
+    break;
+
+    case 5:
+      cDay[0]='F';
+      cDay[1]='R';
+      cDay[2]='I';
+      return true;
+    break;
+
+    case 6:
+      cDay[0]='S';
+      cDay[1]='A';
+      cDay[2]='T';
+      return true;
+    break;
+
+    case 7:
+      cDay[0]='S';
+      cDay[1]='U';
+      cDay[2]='N';
+      return true;
+    break;
+
+    default:
+      return false;
+    break;
+    
+    }
+  
+  }
+
+
+
 
 void read_all_pages(void) {
   Serial.println("command: read_all_pages");
@@ -121,16 +627,254 @@ void read_all_pages(void) {
 
 void write_byte(word page, byte offset, byte databyte) {
   char buf[80];
-  sprintf(buf, "command: write_byte(%04xh, %04xh, %02xh)", page, offset, databyte);
-  Serial.println(buf);
+  //sprintf(buf, "command: write_byte(%04xh, %04xh, %02xh)", page, offset, databyte);
+  //Serial.println(buf);
   byte page_data[256];
   _read_page(page, page_data);
   page_data[offset] = databyte;
   _write_page(page, page_data);
-  Serial.println("Ready");
+  //Serial.println("Ready");
 }
 
-/*
+void write_array(char Array[], int nPage){
+  int i=0;
+  int nIndexArray=0;
+  int nIndexPages=nPage;
+  int nIndexOffset=0;
+ 
+  //Serial.println ("Starting to write array");
+  //Find
+  while(Array[nIndexArray]!=4 ){    
+    //Serial.print (Array[nIndexArray]);
+    write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
+    nIndexArray++;
+    nIndexOffset++;
+    
+    if(nIndexOffset>=255){
+      nIndexOffset=0;
+      nIndexPages++;    
+    }    
+    
+ }
+ //Writes the end of file, need to valida
+ write_byte(nPage,nIndexOffset,4);
+ Serial.println ("Array saved to flash");
+ 
+   
+}
+
+
+void read_array(int Array[], int n){
+  int i=0;
+  Serial.println ("Hello");
+  //Find
+  while(Array[i]!=0){   
+    Serial.println (Array[i]);
+    write_byte(0,i,Array[i]);
+    i++;
+ }
+}
+
+void LoadEventsToMemory(int nIniPage,Event_Type *Event, int *nEvents ){
+
+   byte page_buffer[256];
+   int NoEvents=0;
+
+  //Validation of parameters
+
+  //Reads page from flash memory
+  read_page2(nIniPage, page_buffer);
+
+  //Reads events from the memory buffer and loads them into 
+  //into the event structure array
+  read_events(page_buffer, Event, &NoEvents );
+
+  *nEvents = NoEvents;
+  //Serial.print("Load Events to memory=    ");
+  //Serial.print(NoEvents);
+  }
+
+
+
+//------------------------------------------Middle Level functions------------------------------
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void read_events(byte *pbuffer, Event_Type *Event, int *NoEvents){
+  //char buff[100];
+  //Event_Type Event[20];
+  int nIdEvent=0;
+  int i=0; 
+  Serial.println("Translating events to structure ");
+
+  //travels the array and fills an structur
+  while( (i < 300) && (pbuffer[i]!=0x04)){
+      //Serial.print(page_buffer[i]); 
+      
+      i=i+1;    
+      if(pbuffer[i]==2){
+          i=i+1;
+          //Event ID          
+          Event[nIdEvent].nID=ConvertToInt(pbuffer[i],pbuffer[i+1],pbuffer[i+2]);
+          //Serial.print("Event Number in integer: ");
+          //Serial.println(Event[nIdEvent].nID);
+          i=i+3;
+          //Event Status
+          Event[nIdEvent].nEventStatus=ConvertToInt('0','0',pbuffer[i]);
+          //Serial.print("Event Statud: ");
+          //Serial.println(Event[nIdEvent].nEventStatus);
+          
+          i=i+1;
+          //Event Time Hour
+           Event[nIdEvent].nHour=ConvertToInt('0',pbuffer[i],pbuffer[i+1]);
+          //Serial.print("Hour: ");
+          //Serial.println(Event[nIdEvent].nHour);
+           i=i+2;
+           //Event Time minutes
+           Event[nIdEvent].nMinutes=ConvertToInt('0',pbuffer[i],pbuffer[i+1]);
+          //Serial.print("Minutes: ");
+          //Serial.println( Event[nIdEvent].nMinutes);
+           i=i+2;
+           
+          //Event Day
+           Event[nIdEvent].nDay=DayToInt(pbuffer[i],pbuffer[i+1],pbuffer[i+2]);
+            i=i+3;
+            
+          //Event Output
+           Event[nIdEvent].nOutput=ConvertToInt('0','0',pbuffer[i]);
+           i=i+1;
+           
+          //Event OutputState
+           Event[nIdEvent].nOutputState=ConvertToInt('0','0',pbuffer[i]);
+           i=i+1;
+           
+          //Event Reserved
+           Event[nIdEvent].nRes=ConvertToInt('0','0',pbuffer[i]);
+           i=i+1;
+           
+           if(pbuffer[i]==3){
+            // Serial.print("EOE Event: ");
+            // Serial.println(nIdEvent);  
+             nIdEvent++;
+           }   
+       } 
+       //Serial.println(i);
+   }
+
+   *NoEvents=nIdEvent;
+
+   
+  
+
+    
+   Serial.print("Total Events: ");   
+   Serial.print(nIdEvent);
+   Serial.println();
+ 
+   //Print all the array of structure
+  /*for(short nCounter=0; nCounter<nIdEvent;nCounter++){
+    Serial.print("Position: ");
+    Serial.print(nCounter);
+    Serial.print(' ');
+    Serial.print(Event[nCounter].nID);
+    Serial.print(' ');
+    Serial.print(Event[nCounter].nEventStatus);
+    Serial.print(' ');
+     Serial.print(Event[nCounter].nHour);
+    Serial.print(' ');
+     Serial.print(Event[nCounter].nMinutes);
+    Serial.print(' ');
+     Serial.print(Event[nCounter].nDay);
+     Serial.print(' ');
+     Serial.print(Event[nCounter].nOutput);
+     Serial.print(' ');
+     Serial.print( Event[nCounter].nOutputState);
+     Serial.println(' ');
+   
+  }*/
+   
+
+}
+
+int ConvertToInt(char cBit2,  char cBit1, char cBit0  ){
+  //Calculates the integer from a 3 digit string
+  //There is no error handling aiming to reduce size of the program
+  //MSB= cBit2, LSB cBit0
+  int nResult=0;
+  nResult=  ((cBit2-48)*100) + ((cBit1- 48)*10) + (cBit0- 48);
+  return nResult;
+  }
+  
+ int DayToInt(char cBit2, char cBit1, char cBit0){
+ //Create the string 
+ int nResult=0;
+ short nAsciiSum;
+ 
+ nAsciiSum= cBit2+cBit1+cBit0;
+ 
+ 
+switch (nAsciiSum) {
+    case 234:
+      //Monday-> M(77)+O(79)+N(78)=234
+      //Serial.println("Monday"); 
+      return 1;
+      break;
+      
+    case 238:
+      //Tuesday-> //T(84)+U(85)+E(69)=238
+      //Serial.println("Tuesday"); 
+      return 2;
+      break;
+      
+    case 224:
+      //Wednesday-> //W(87)+E(69)+D(68)=224
+      //Serial.println("Wednesday"); 
+      return 3;
+      break;
+    
+    case 241:
+      //Thurday-> //T(84)+H(72)+U(85)=241
+      //Serial.println("Thursday"); 
+      return 4;
+      break;
+    
+    case 225:
+      //Friday-> //F(70)+R(82)+I(73)=225
+      //Serial.println("Friday"); 
+      return 5;
+      break;
+    
+    case 232:
+      //Saturday-> //S(83)+A(65)+T(84)=232
+      //Serial.println("Saturday"); 
+      return 6;
+      break;
+     
+    case 246:
+      //Serial.println("Sunday"); 
+      return 7;
+      //Sunday-> //S(83)+U(85)+N(78)=246
+      
+      break;  
+      
+    default: 
+      // if nothing else matches, do the default
+      // Return 0;
+      return 0;
+      Serial.println("No match in th eday"); 
+    break;
+  }
+ 
+ 
+ }
+ 
+
+
+//***************************************** END OF TOP LEVEL ROUTINES***************************************
+
+
+
+/*******************************************LOW LEVEL ROUTINES**************************************
 ================================================================================
 Low-Level Device Routines
 The functions below perform the lowest-level interactions with the flash device.
@@ -176,6 +920,8 @@ void _chip_erase(void) {
   */
   not_busy();
 }
+
+
 
 /*
  * See the timing diagram in section 9.2.10 of the
@@ -224,6 +970,24 @@ void _write_page(word page_number, byte *page_buffer) {
   not_busy();
 }
 
+
+// Deletes 4KB sector
+void _erase_sector(word sector){
+  digitalWrite(SS, HIGH);
+  digitalWrite(SS, LOW);
+  SPI.transfer(WB_WRITE_ENABLE);
+  digitalWrite(SS, HIGH);
+  digitalWrite(SS, LOW);
+  SPI.transfer(WB_SECTOR_ERASE);
+  sector=sector*16;//sectors are in multiples of 16 pages
+  SPI.transfer((sector >> 8) & 0xFF);//send byte from front 8 bits  
+  SPI.transfer((sector >> 0) & 0xFF);//send byte from bottom 8 bits
+  SPI.transfer(0); // send byte 0x00
+  digitalWrite(SS, HIGH); 
+  not_busy();
+}
+
+
 /* 
  * not_busy() polls the status bit of the device until it
  * completes the current operation. Most operations finish
@@ -240,6 +1004,10 @@ void not_busy(void) {
   digitalWrite(SS, HIGH);  
 }
 
+
+/*******************************************END OF LOW LEVEL ROUTINES**************************************
+
+/*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^MAIN LOOP ROUTINES^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /*
  * This handy built-in callback function alerts the UNO
  * whenever a serial event occurs. In our case, we check
@@ -253,6 +1021,7 @@ void serialEvent() {
     c = (char)Serial.read();
     if (c == ';') {
       g_command_ready = true;
+      g_command.trim();
     }
     else {
       g_command += c;
@@ -260,6 +1029,21 @@ void serialEvent() {
   }
 }
 
+void UpdateChannel(Channel_Type &Channel){
+  Channel.bState=1;
+  if (Channel.nOutput==1){
+  }
+
+  else if (Channel.nOutput==2){}
+
+  else if(Channel.nOutput==3){}
+
+  else if((Channel.nOutput==4)){}
+
+  else{}
+  }
+
+//(((((((((((((((((((((((((((((((((((((((((TEST HERE)))))))))))))))))))))))))))))))))))))))))))))))))))))))
 void setup(void) {
   SPI.begin();
   SPI.setDataMode(0);
@@ -267,7 +1051,72 @@ void setup(void) {
   Serial.begin(9600);
   Serial.println("");
   Serial.println("Ready"); 
+  get_jedec_id();
+//  char cNumber[3];
+
+ // for(int i=0;i<=990;i++){
+  
+//  if (IntToChar(i,cNumber)==1){
+//    Serial.print("Number in Char ");
+//    Serial.print(cNumber[0]);
+//    Serial.print('-');
+//    Serial.print(cNumber[1]);
+//    Serial.print('-');
+//    Serial.println(cNumber[2]);
+//    }
+
+//  }
+  
+  //creates an array of structures
+  Event_Type Event[16];
+ // Event_Type Now;
+  int nEvents; 
+ // Channel_Type Channel;
+  
+
+//  Serial.print("No of events: ");
+//  Serial.println(nEvents);
+
+  //To verify if it is working fine.
+  //WriteEventsToFlash(Event, nEvents);
+
+  //LoadEventsToMemory(0,Event,&nEvents );
+  
+  //AddEvent(Event,1,4,21,2,1);
+  //AddEvent(Event,2,10,55,1,1);
+  //AddEvent(Event,3,7,13,3,1);
+  //DeleteEvent(Event,3);
+  
+  //AddEvent(Event,4,7,13,3,1);
+  //AddEvent(Event,5,7,13,3,1);
+  //AddEvent(Event,6,7,13,3,1);
+  //AddEvent(Event,7,7,13,3,1);
+  //AddEvent(Event,1,7,13,3,1);
+
+  //Serial.println("Delete Event");
+  
+ // AddEvent(Event,1,4,14,0,1);
+
+
+  //Serial.println("Print flash");
+  //read_page_ascii(0);
+
+  //LoadEventsToMemory(0,Event,&nEvents );
+
+  
+//  Now.nMinutes=30;
+//  Now.nHour=10;
+//  Now.nDay=1;
+//  Channel.bState=0;
+
+
+  
+
+
 }
+/*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^END OF MAIN LOOP ROUTINES^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 
 /*
  * loop() dispatches the commands compiled by the serialEvent
@@ -279,6 +1128,7 @@ void loop(void) {
     if (g_command == "get_jedec_id") {
       get_jedec_id();
     }
+  
     else if (g_command == "chip_erase") {
       chip_erase();
     }
@@ -295,6 +1145,60 @@ void loop(void) {
         read_page(page);
       }
     }
+
+     else if (g_command.startsWith("read_p_ascii")) {
+      int pos = g_command.indexOf(" ");
+      if (pos == -1) {
+        Serial.println("Error: Command 'read_page' expects an int operand");
+      } else {
+        word page = (word)g_command.substring(pos).toInt();
+        read_page_ascii(page);
+      }
+      g_command = "";
+      g_command_ready = false;
+    }
+
+  //JV added on 29/08/2017 to delete a 4kb sector
+    else if (g_command.startsWith("erase_sector")) {
+      int pos = g_command.indexOf(" ");
+      if (pos == -1) {
+        Serial.println("Error: Command 'read_page' expects an int operand");
+      } else {
+        word page = (word)g_command.substring(pos).toInt();
+        //read_page(page);
+        erase_sector(page);
+      }
+      g_command = "";
+      g_command_ready = false;
+    }
+    
+    else if (g_command.startsWith("write_events")) {
+     Serial.println("Writing Events");
+       char MyArray[600]={ 1 ,'E','V','E','N','T',' ','F','I','L','E','S','T','A','R','T',
+                        2 ,'0','0','0','1','1','0','3','0','M','O','N','1','1','x',3,
+                        2 ,'0','0','1','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','2','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','3','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','4','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','5','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','6','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','7','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','8','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','0','9','1','1','0','3','5','T','U','E','1','0','x',3,
+                        2 ,'0','1','0','1','1','0','3','5','T','U','E','1','0','x',3,
+                        4,'E','V','E','N','T','X','F','I','L','E','X','E','N','D',4,
+                       'S','O','M','E','M','O','R','E','R','U','B','I','S','H','x','x'}; 
+     write_array(MyArray,0);
+     Serial.println("Done");
+    }
+
+    else if (g_command.startsWith("AddEvent")){
+      Serial.println("Starts here");
+      g_command = "";
+      g_command_ready = false;
+      Serial.flush();
+      
+     }
     // A three-parameter command..
     else if (g_command.startsWith("write_byte")) {
       word pageno;
@@ -319,11 +1223,12 @@ void loop(void) {
     else {
       Serial.print("Invalid command sent: ");
       Serial.println(g_command);
+      g_command = "";
+      g_command_ready = false;
+      Serial.flush();
     }
 done:
     g_command = "";
     g_command_ready = false;
   }
 }
-
-
