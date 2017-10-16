@@ -225,11 +225,15 @@ void write_byte(word page, byte offset, byte databyte) {
 }
 
 //Working here
-void Write_Event(){
+void Write_Event(String sEvent){
   int nPage=0;
   int nOffset=0;
   byte page_buffer[256];
   int nNextAvailablePosition=0;
+  char cEvent[16];
+  Serial.print("sEvent");
+  Serial.println(sEvent);
+  
   
   //Search for the next position available
   Serial.println(page_buffer[nOffset]);
@@ -246,13 +250,15 @@ void Write_Event(){
           Serial.print(nOffset);
           Serial.print("-Position Available: ");
           nNextAvailablePosition=nOffset;
-          Serial.println(nNextAvailablePosition);
-          
-          
-        }
-      
+          Serial.println(nNextAvailablePosition);  
+        }     
     }
   }
+  sEvent.toCharArray(cEvent,8);
+  Serial.println((char)cEvent[2]);
+  Serial.println("Recieved-");
+  Serial.println(sEvent);
+  
 }
 void write_array(char Array[], int nPage){
   int i=0;
@@ -313,7 +319,7 @@ void loop() {
       stringLenght=sCommand.length();
       Serial.println(stringLenght);
       Serial.println(sFirstParameter);
-      Write_Event();
+      Write_Event(sFirstParameter);
       }
 
       else if(sCommand=="ShowEvents"){

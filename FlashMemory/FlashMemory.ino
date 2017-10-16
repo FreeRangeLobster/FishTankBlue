@@ -1110,8 +1110,8 @@ void setup(void) {
   delay(200);
   AddEvent(Event,7,14,33,2,1);
   delay(1000);
-
-  */
+*/
+ 
  
   //DeleteEvent(Event,3);
 
@@ -1123,17 +1123,17 @@ void setup(void) {
 
 
  // Serial.println("Print flash");
-  read_page_ascii(0);
+  //read_page_ascii(0);
     delay(100);
-  read_page_ascii(0);
+  //read_page_ascii(0);
      delay(100);
-  read_page_ascii(0);
+  //read_page_ascii(0);
 
- read_page_ascii(0);
+ //read_page_ascii(0);
     delay(100);
-  read_page_ascii(0);
+  //read_page_ascii(0);
      delay(100);
-  read_page_ascii(0);
+  //read_page_ascii(0);
   
  // read_page_ascii(0);
  // read_page_ascii(0);
