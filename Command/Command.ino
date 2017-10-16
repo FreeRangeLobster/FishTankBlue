@@ -1,6 +1,7 @@
 #include <SPI.h>
 
-
+//https://hackingmajenkoblog.wordpress.com/2016/02/04/the-evils-of-arduino-strings/
+//String handling in Arduino
 // SS:   pin 10
 // MOSI: pin 11
 // MISO: pin 12
@@ -26,6 +27,10 @@ String sCommand;
 String sFirstParameter;
 String sSecondParameter;
 String sThirdParameter;
+char cFirstParameter[16];
+char cSecondParameter[16];
+char cThirdParameter[16];
+
 int nParameter=0;
 
 
@@ -225,19 +230,45 @@ void write_byte(word page, byte offset, byte databyte) {
 }
 
 //Working here
-void Write_Event(String sEvent){
+void Write_Event(){
   int nPage=0;
   int nOffset=0;
   byte page_buffer[256];
+  char cFirstParameter[16];
   int nNextAvailablePosition=0;
-  char cEvent[16];
-  Serial.print("sEvent");
-  Serial.println(sEvent);
+  //char cEvent[16];
+  Serial.print("Parameter1 in String:  ");
+  Serial.println(sFirstParameter);
+  sFirstParameter.toCharArray(cFirstParameter,16);
+
+  Serial.println("Coping Across to char array");
+  Serial.println("Array:  -");
+  for(int i=0;i<16;i++){
+    Serial.print(cFirstParameter[i]);
+   }
+  Serial.println("-end");
   
-  
+  /*
+   * 
+   * while(Array[nIndexArray]!=4 ){    
+    //Serial.print (Array[nIndexArray]);
+    write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
+    nIndexArray++;
+    nIndexOffset++;
+    
+    if(nIndexOffset>=255){
+      nIndexOffset=0;
+      nIndexPages++;    
+    }
+   * 
+   * 
+   * 
+   * 
+   * 
+   * 
   //Search for the next position available
   Serial.println(page_buffer[nOffset]);
-  for(nPage=0;nPage<=3;nPage++){
+  for(nPage=0;nPage<=1;nPage++){
     _read_page(nPage, page_buffer);
      Serial.println("Searching in new page");
     for(nOffset=0;nOffset<255;nOffset=nOffset+16){
@@ -252,12 +283,12 @@ void Write_Event(String sEvent){
           nNextAvailablePosition=nOffset;
           Serial.println(nNextAvailablePosition);  
         }     
-    }
+    } 
   }
-  sEvent.toCharArray(cEvent,8);
-  Serial.println((char)cEvent[2]);
+  //sEvent.toCharArray(cEvent,8);
+  //Serial.println((char)cEvent[2]);
   Serial.println("Recieved-");
-  Serial.println(sEvent);
+  //Serial.println(sEvent); */
   
 }
 void write_array(char Array[], int nPage){
@@ -316,10 +347,16 @@ void loop() {
 
     if(sCommand=="AddEvent"){
       Serial.println("AddEvent-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      Serial.println(sFirstParameter);
-      Write_Event(sFirstParameter);
+      //stringLenght=sCommand.length();
+      //Serial.println(stringLenght);
+      //Serial.println(sFirstParameter);
+      Serial.println("Checking parameter :");
+      for(int i=0; i<6;i++){
+        Serial.print(cFirstParameter[i]);
+        }
+      Serial.println("End of parameter");  
+      
+      Write_Event();
       }
 
       else if(sCommand=="ShowEvents"){
@@ -404,6 +441,7 @@ void serialEvent() {
   while (Serial.available()) {
     // get the new byte:
     char inChar = (char)Serial.read();
+    int nIndex=0;
    if (inChar == ';') {
       stringComplete = true;
       nParameter=0;
@@ -422,6 +460,9 @@ void serialEvent() {
         }
        if (nParameter==1){
           sFirstParameter += inChar;
+          cFirstParameter[nIndex]=inChar;
+          //Serial.println(cFirstParameter[nIndex]);
+          nIndex++;
         }
 
        if (nParameter==2){
