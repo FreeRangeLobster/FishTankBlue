@@ -242,11 +242,34 @@ void Write_Event(){
   sFirstParameter.toCharArray(cFirstParameter,16);
 
   Serial.println("Coping Across to char array");
-  Serial.println("Array:  -");
+  Serial.print("Array:  -");
   for(int i=0;i<16;i++){
-    Serial.print(cFirstParameter[i]);
+    Serial.print((char)cFirstParameter[i]);
+    delay(10);
    }
   Serial.println("-end");
+  delay(500);
+
+  for(nPage=0;nPage<1;nPage++){
+    //_read_page(0, page_buffer);
+    Serial.println("Searching in new page");
+    //nOffset=0;
+    delay(500);
+  }
+  
+  }
+
+  /*do{
+      Serial.print(nOffset);
+      Serial.print("-Position: ");
+      Serial.println((char)page_buffer[nOffset]);
+      Serial.print(nOffset);
+      Serial.print("-Position Available: ");
+      nNextAvailablePosition=nOffset;
+      Serial.println(nNextAvailablePosition);  
+      nOffset++;  
+     }while(page_buffer[nOffset]=='H');
+    */
   
   /*
    * 
@@ -265,8 +288,14 @@ void Write_Event(){
    * 
    * 
    * 
-   * 
+   *  */
   //Search for the next position available
+  
+  //Serial.println(page_buffer[nOffset]);
+
+ 
+ 
+  /*
   Serial.println(page_buffer[nOffset]);
   for(nPage=0;nPage<=1;nPage++){
     _read_page(nPage, page_buffer);
@@ -284,13 +313,8 @@ void Write_Event(){
           Serial.println(nNextAvailablePosition);  
         }     
     } 
-  }
-  //sEvent.toCharArray(cEvent,8);
-  //Serial.println((char)cEvent[2]);
-  Serial.println("Recieved-");
-  //Serial.println(sEvent); */
-  
-}
+  } */ 
+
 void write_array(char Array[], int nPage){
   int i=0;
   int nIndexArray=0;
@@ -329,7 +353,8 @@ void setup() {
   Serial.println("Ready"); 
   get_jedec_id();
 
-  
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH); 
   
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
@@ -341,25 +366,86 @@ void setup() {
 
 void loop() {
   // print the string when a newline arrives:
+   digitalWrite(LED_BUILTIN, HIGH);
   if (stringComplete) {
     Serial.println(sCommand);
     // clear the string:
 
     if(sCommand=="AddEvent"){
       Serial.println("AddEvent-OK");
-      //stringLenght=sCommand.length();
-      //Serial.println(stringLenght);
-      //Serial.println(sFirstParameter);
-      Serial.println("Checking parameter :");
-      for(int i=0; i<6;i++){
-        Serial.print(cFirstParameter[i]);
-        }
-      Serial.println("End of parameter");  
-      
+      Serial.println("Checking parameter :");      
       Write_Event();
+      Serial.println("All good until here"); 
       }
 
-      else if(sCommand=="ShowEvents"){
+    else if(sCommand=="ShowEvents"){
+      Serial.println("ShowEvents-OK");
+      stringLenght=sCommand.length();
+      Serial.println(stringLenght);
+      read_page_ascii(0);
+      }
+
+    else{
+      Serial.println("Not Found");
+      stringLenght=sCommand.length();
+      Serial.println(stringLenght);
+      cTemp=sCommand.charAt(1);
+      Serial.println("Character: ");
+      Serial.println(cTemp,DEC);
+      }
+    
+    sCommand = "";
+    sFirstParameter="";
+    sSecondParameter="";
+    stringComplete = false;
+  }
+
+  digitalWrite(LED_BUILTIN, LOW);
+}
+
+/*
+  SerialEvent occurs whenever a new data comes in the hardware serial RX. This
+  routine is run between each time loop() runs, so using delay inside loop can
+  delay response. Multiple bytes of data may be available.
+*/
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    int nIndex=0;
+   if (inChar == ';') {
+      stringComplete = true;
+      nParameter=0;
+      sCommand.trim();
+      sFirstParameter.trim();
+      sSecondParameter.trim(); 
+   }
+   else {
+      if (nParameter==0){
+          sCommand += inChar;
+        }
+       if (nParameter==1){
+          sFirstParameter += inChar;
+          nIndex++;
+        }
+
+       if (nParameter==2){
+          sSecondParameter += inChar;
+        }
+   }    
+   
+   if(inChar==' ') {
+    nParameter++;
+   }
+   
+   
+  }   
+}
+
+
+/*
+ * 
+ * else if(sCommand=="ShowEvents"){
       Serial.println("ShowEvents-OK");
       stringLenght=sCommand.length();
       Serial.println(stringLenght);
@@ -414,62 +500,5 @@ void loop() {
       stringLenght=sCommand.length();
       Serial.println(stringLenght);
       }
-
-      
-    else{
-      Serial.println("Not Found");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      cTemp=sCommand.charAt(1);
-      Serial.println("Character: ");
-      Serial.println(cTemp,DEC);
-      }
-    
-    sCommand = "";
-    sFirstParameter="";
-    sSecondParameter="";
-    stringComplete = false;
-  }
-}
-
-/*
-  SerialEvent occurs whenever a new data comes in the hardware serial RX. This
-  routine is run between each time loop() runs, so using delay inside loop can
-  delay response. Multiple bytes of data may be available.
-*/
-void serialEvent() {
-  while (Serial.available()) {
-    // get the new byte:
-    char inChar = (char)Serial.read();
-    int nIndex=0;
-   if (inChar == ';') {
-      stringComplete = true;
-      nParameter=0;
-      sCommand.trim();
-      sFirstParameter.trim();
-      sSecondParameter.trim(); 
-   }   
-   
-   else if(inChar==' ') {
-    nParameter++;
-   }
-   
-   else {
-      if (nParameter==0){
-          sCommand += inChar;
-        }
-       if (nParameter==1){
-          sFirstParameter += inChar;
-          cFirstParameter[nIndex]=inChar;
-          //Serial.println(cFirstParameter[nIndex]);
-          nIndex++;
-        }
-
-       if (nParameter==2){
-          sSecondParameter += inChar;
-        }
-   } 
-  }   
-}
-
-
+ * /
+ */
