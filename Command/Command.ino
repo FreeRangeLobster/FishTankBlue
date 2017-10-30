@@ -250,16 +250,58 @@ void Write_Event(){
   Serial.println("-end");
   delay(500);
 
-  for(nPage=0;nPage<1;nPage++){
-    //_read_page(0, page_buffer);
+  _read_page(0, page_buffer);
+  
+  do{
     Serial.println("Searching in new page");
     //nOffset=0;
     delay(500);
-  }
-  
-  }
+    nOffset=0;
+    while(page_buffer[nOffset]=='H'){
+      Serial.print(nOffset);
+      Serial.print("-Position: ");
+      Serial.println((char)page_buffer[nOffset]);
+      Serial.print(nOffset);
+      Serial.print("-Position Available: ");
+      nNextAvailablePosition=nOffset;
+      Serial.println(nNextAvailablePosition);
+      nOffset=nOffset+16;  
+    } 
+    nPage++;
+    _read_page(nPage, page_buffer);  
+  }while(page_buffer[0]=='H');
+  nPage--;
 
-  /*do{
+  Serial.print("-Next Position Offset : ");
+  Serial.print(nNextAvailablePosition);
+  Serial.print("Page:  ");
+  Serial.println(nPage);      
+
+
+/*
+//}While heere
+  for(nPage=0;nPage<2;nPage++){
+    _read_page(0, page_buffer);
+    Serial.println("Searching in new page");
+    //nOffset=0;
+    delay(500);
+    nOffset=0;
+
+    while(page_buffer[nOffset]=='H'){
+      Serial.print(nOffset);
+      Serial.print("-Position: ");
+      Serial.println((char)page_buffer[nOffset]);
+      Serial.print(nOffset);
+      Serial.print("-Position Available: ");
+      nNextAvailablePosition=nOffset;
+      Serial.println(nNextAvailablePosition);
+      nOffset=nOffset+16;  
+    }   
+  } */ 
+  
+    
+    /*do{
+      nOffset=nOffset+16;
       Serial.print(nOffset);
       Serial.print("-Position: ");
       Serial.println((char)page_buffer[nOffset]);
@@ -267,12 +309,50 @@ void Write_Event(){
       Serial.print("-Position Available: ");
       nNextAvailablePosition=nOffset;
       Serial.println(nNextAvailablePosition);  
-      nOffset++;  
-     }while(page_buffer[nOffset]=='H');
-    */
+    }while(page_buffer[nOffset]=='H');  
+  }*/
+  //Next line
   
-  /*
-   * 
+/*
+  write_byte(0,nOffset,'H');
+  nOffset=nOffset+1;
+  Serial.print("Offset:  "); 
+   Serial.println(nOffset); 
+  write_byte(0,nOffset,'E');
+   nOffset=nOffset+1;
+   Serial.print("Offset:  "); 
+   Serial.println(nOffset); 
+  write_byte(0,nOffset,'L');
+   nOffset=nOffset+1;
+   Serial.print("Offset:  "); 
+   Serial.println(nOffset); 
+  write_byte(0,nOffset,'L');
+   nOffset=nOffset+1;
+   Serial.print("Offset:  "); 
+   Serial.println(nOffset); 
+  write_byte(0,nOffset,'O');
+   nOffset=nOffset+1;
+   Serial.print("Offset:  "); 
+   Serial.println(nOffset); 
+   */
+
+ /* 
+
+  while(Array[nIndexArray]!=4 ){    
+    //Serial.print (Array[nIndexArray]);
+    write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
+    nIndexArray++;
+    nIndexOffset++;
+    
+    if(nIndexOffset>=255){
+      nIndexOffset=0;
+      nIndexPages++;    
+    } 
+  
+  }
+
+  
+  / * 
    * while(Array[nIndexArray]!=4 ){    
     //Serial.print (Array[nIndexArray]);
     write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
@@ -314,6 +394,7 @@ void Write_Event(){
         }     
     } 
   } */ 
+}
 
 void write_array(char Array[], int nPage){
   int i=0;
@@ -384,6 +465,30 @@ void loop() {
       Serial.println(stringLenght);
       read_page_ascii(0);
       }
+
+    else if(sCommand=="EraseEvents"){
+      Serial.println("EraseEvents-OK");
+      stringLenght=sCommand.length();
+      Serial.println(stringLenght);
+      erase_sector(0);
+      }
+
+    else if (sCommand="WriteTemplate") {
+        Serial.println("Writing Events");
+        char MyArray[600]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',
+                            'H','0','0','1','!','0','2','3','5','T','U','E','1','0','!','T',
+                            'H','0','0','2','!','0','3','3','5','T','U','E','1','0','!','T',
+                            'H','0','0','3','!','0','4','3','5','T','U','E','1','0','!','T',
+                            'H','0','0','4','!','0','5','3','6','T','U','E','1','0','!','T',
+                            'H','0','0','5','!','0','6','3','5','T','U','E','1','0','!','T',
+                            'H','0','0','6','!','0','7','3','5','T','U','E','1','0','!','T',
+                            'H','0','0','7','!','0','8','3','5','T','U','E','1','0','!','T',
+                            'H','0','0','8','!','0','9','3','5','T','U','E','1','0','!','T',
+                            'H','0','0','9','!','1','0','3','5','T','U','E','1','0','!','T',
+                            'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T'};
+        write_array(MyArray,0);
+        Serial.println("Done");
+    }
 
     else{
       Serial.println("Not Found");
