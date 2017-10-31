@@ -174,9 +174,29 @@ void not_busy(void) {
   digitalWrite(SS, HIGH);  
 }
 
+void print_page_bytes(byte *page_buffer) {
+  char buf[10];
+  for (int i = 0; i < 16; ++i) {
+    for (int j = 0; j < 16; ++j) {
+      sprintf(buf, "%02x", page_buffer[i * 16 + j]);
+      Serial.print(buf);
+    }
+    Serial.println();
+  }
+}
 
 /*******************************************END OF LOW LEVEL ROUTINES**************************************/
 //Mid level
+
+void read_page(unsigned int page_number) {
+  char buf[80];
+  sprintf(buf, "command: read_page(%04xh)", page_number);
+  Serial.println(buf);
+  byte page_buffer[256];
+  _read_page(page_number, page_buffer);
+  print_page_bytes(page_buffer);
+  Serial.println("Ready");
+}
 
   
 void read_page_ascii(unsigned int page_number) {
@@ -272,10 +292,43 @@ void Write_Event(){
   }while(page_buffer[0]=='H');
   nPage--;
 
+  write_byte(nPage,nNextAvailablePosition+21,104);
   Serial.print("-Next Position Offset : ");
   Serial.print(nNextAvailablePosition);
   Serial.print("Page:  ");
   Serial.println(nPage);      
+
+  
+
+  //Add Header
+  //'H'
+  
+  
+  //Add Number
+ // '0','0','0'
+  
+  //Add nothing
+  //incrementoffsert
+  
+  //Add Time
+  //'0','1','3','0'
+  
+  //Add Day
+  //'M','O','N'
+  
+  //Add Output
+  //1
+  
+  //Add Output State
+  //1
+  
+  //Add nothing
+  //incrementoffsert
+  
+  //Add Tail
+  //'T'
+  
+  //'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T'
 
 
 /*
@@ -472,6 +525,16 @@ void loop() {
       Serial.println(stringLenght);
       erase_sector(0);
       }
+
+     else if (sCommand.startsWith("read_page")) {
+      int pos = sCommand.indexOf(" ");
+      if (pos == -1) {
+        Serial.println("Error: Command 'read_page' expects an int operand");
+      } else {
+        word page = (word)sCommand.substring(pos).toInt();
+        read_page(page);
+      }
+    } 
 
     else if (sCommand="WriteTemplate") {
         Serial.println("Writing Events");
