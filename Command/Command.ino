@@ -528,6 +528,9 @@ void loop() {
 
      else if (sCommand=="ReadPage") {
         read_page(0);
+      read_page(0);
+      read_page(0);
+      read_page(0);
       
     } 
 
