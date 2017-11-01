@@ -292,7 +292,7 @@ void Write_Event(){
   }while(page_buffer[0]=='H');
   nPage--;
 
-  write_byte(nPage,nNextAvailablePosition+21,104);
+  write_byte(0,245,'x');
   Serial.print("-Next Position Offset : ");
   Serial.print(nNextAvailablePosition);
   Serial.print("Page:  ");
@@ -526,17 +526,12 @@ void loop() {
       erase_sector(0);
       }
 
-     else if (sCommand.startsWith("read_page")) {
-      int pos = sCommand.indexOf(" ");
-      if (pos == -1) {
-        Serial.println("Error: Command 'read_page' expects an int operand");
-      } else {
-        word page = (word)sCommand.substring(pos).toInt();
-        read_page(page);
-      }
+     else if (sCommand=="ReadPage") {
+        read_page(0);
+      
     } 
 
-    else if (sCommand="WriteTemplate") {
+    else if (sCommand=="WriteTemplate") {
         Serial.println("Writing Events");
         char MyArray[600]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',
                             'H','0','0','1','!','0','2','3','5','T','U','E','1','0','!','T',
