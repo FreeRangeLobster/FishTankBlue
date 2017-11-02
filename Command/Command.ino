@@ -263,7 +263,7 @@ void Write_Event(){
 
   Serial.println("Coping Across to char array");
   Serial.print("Array:  -");
-  for(int i=0;i<16;i++){
+  for(int i=0;i<10;i++){
     Serial.print((char)cFirstParameter[i]);
     delay(10);
    }
@@ -285,14 +285,16 @@ void Write_Event(){
       Serial.print("-Position Available: ");
       nNextAvailablePosition=nOffset;
       Serial.println(nNextAvailablePosition);
-      nOffset=nOffset+16;  
+      nOffset=nOffset+16;        
     } 
     nPage++;
     _read_page(nPage, page_buffer);  
+    Serial.println(nPage++);
   }while(page_buffer[0]=='H');
+  
   nPage--;
 
-  write_byte(0,245,'x');
+  
   Serial.print("-Next Position Offset : ");
   Serial.print(nNextAvailablePosition);
   Serial.print("Page:  ");
@@ -301,32 +303,64 @@ void Write_Event(){
   
 
   //Add Header
-  //'H'
-  
-  
+  write_byte(nPage,nOffset,'H');
+  nOffset++;
+
+  //Calculate number here  
   //Add Number
- // '0','0','0'
+   write_byte(nPage,nOffset,'1');
+   nOffset++;
+   write_byte(nPage,nOffset,'1');
+   nOffset++;
+   write_byte(nPage,nOffset,'1');
+   nOffset++;
+  // '0','0','0'
+
+
+ 
   
   //Add nothing
-  //incrementoffsert
+  nOffset++;
   
   //Add Time
   //'0','1','3','0'
-  
+    write_byte(nPage,nOffset,(char)cFirstParameter[0]);
+    nOffset++;
+    write_byte(nPage,nOffset,(char)cFirstParameter[1]);
+    nOffset++;
+    write_byte(nPage,nOffset,(char)cFirstParameter[2]);
+    nOffset++;
+    write_byte(nPage,nOffset,(char)cFirstParameter[3]);
+    nOffset++;
+
   //Add Day
   //'M','O','N'
+    write_byte(nPage,nOffset,(char)cFirstParameter[4]);
+    nOffset++;
+    write_byte(nPage,nOffset,(char)cFirstParameter[5]);
+    nOffset++;
+    write_byte(nPage,nOffset,(char)cFirstParameter[6]);
+    nOffset++;
+  
   
   //Add Output
   //1
+  write_byte(nPage,nOffset,(char)cFirstParameter[7]);
+    nOffset++;
+    
   
   //Add Output State
   //1
-  
+  write_byte(nPage,nOffset,(char)cFirstParameter[8]);
+    nOffset++;
+
   //Add nothing
   //incrementoffsert
-  
+  nOffset++;
+
   //Add Tail
   //'T'
+  write_byte(nPage,nOffset,'T');
   
   //'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T'
 
@@ -470,7 +504,7 @@ void write_array(char Array[], int nPage){
     
  }
  //Writes the end of file, need to valida
- write_byte(nPage,nIndexOffset,4);
+ //write_byte(nPage,nIndexOffset,4);
  Serial.println ("Array saved to flash");  
 }
 
@@ -517,6 +551,7 @@ void loop() {
       stringLenght=sCommand.length();
       Serial.println(stringLenght);
       read_page_ascii(0);
+      read_page_ascii(1);
       }
 
     else if(sCommand=="EraseEvents"){
@@ -527,16 +562,14 @@ void loop() {
       }
 
      else if (sCommand=="ReadPage") {
-        read_page(0);
-      read_page(0);
-      read_page(0);
-      read_page(0);
+        read_page(1);
+   
       
     } 
 
     else if (sCommand=="WriteTemplate") {
         Serial.println("Writing Events");
-        char MyArray[600]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',
+        char MyArray[177]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',
                             'H','0','0','1','!','0','2','3','5','T','U','E','1','0','!','T',
                             'H','0','0','2','!','0','3','3','5','T','U','E','1','0','!','T',
                             'H','0','0','3','!','0','4','3','5','T','U','E','1','0','!','T',
@@ -546,7 +579,7 @@ void loop() {
                             'H','0','0','7','!','0','8','3','5','T','U','E','1','0','!','T',
                             'H','0','0','8','!','0','9','3','5','T','U','E','1','0','!','T',
                             'H','0','0','9','!','1','0','3','5','T','U','E','1','0','!','T',
-                            'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T'};
+                            'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T',4};
         write_array(MyArray,0);
         Serial.println("Done");
     }
