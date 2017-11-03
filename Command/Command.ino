@@ -1,5 +1,8 @@
 #include <SPI.h>
 
+
+
+
 //https://hackingmajenkoblog.wordpress.com/2016/02/04/the-evils-of-arduino-strings/
 //String handling in Arduino
 // SS:   pin 10
@@ -250,6 +253,8 @@ void write_byte(word page, byte offset, byte databyte) {
 }
 
 //Working here
+//AddEvent 0150TUE11;
+
 void Write_Event(){
   int nPage=0;
   int nOffset=0;
@@ -271,12 +276,12 @@ void Write_Event(){
   delay(500);
 
   _read_page(0, page_buffer);
-  
+
   do{
     Serial.println("Searching in new page");
-    //nOffset=0;
     delay(500);
     nOffset=0;
+    nPage++;
     while(page_buffer[nOffset]=='H'){
       Serial.print(nOffset);
       Serial.print("-Position: ");
@@ -292,7 +297,6 @@ void Write_Event(){
     Serial.println(nPage++);
   }while(page_buffer[0]=='H');
   
-  nPage--;
 
   
   Serial.print("-Next Position Offset : ");
