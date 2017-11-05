@@ -268,54 +268,44 @@ void Write_Event(){
 
   Serial.println("Coping Across to char array");
   Serial.print("Array:  -");
-  for(int i=0;i<10;i++){
-    Serial.print((char)cFirstParameter[i]);
-    delay(10);
-   }
-  Serial.println("-end");
-  delay(500);
-
   _read_page(0, page_buffer);
 
-  do{
-    Serial.println("Searching in new page");
-    delay(500);
-    nOffset=0;
-    nPage++;
-    while(page_buffer[nOffset]=='H'){
-      Serial.print(nOffset);
-      Serial.print("-Position: ");
-      Serial.println((char)page_buffer[nOffset]);
-      Serial.print(nOffset);
+  nOffset=0;
+  nPage=0;
+  
+  while(page_buffer[nOffset]=='H'){
+      Serial.println("Loop");
+      nOffset=nOffset+16;
+      delay(10); 
       Serial.print("-Position Available: ");
-      nNextAvailablePosition=nOffset;
-      Serial.println(nNextAvailablePosition);
-      nOffset=nOffset+16;        
-    } 
-    nPage++;
-    _read_page(nPage, page_buffer);  
-    Serial.println(nPage++);
-  }while(page_buffer[0]=='H');
-  
+      delay(10);
+      Serial.println(nOffset);
+      //if (nOffset>255){
+      //  nPage++;
+      //  nOffset=0;
+      //  _read_page(nPage, page_buffer);
+      //  delay(10); 
+      //  Serial.println("Page");  
+      //}
+      delay(100);       
+    }      
 
-  
-  Serial.print("-Next Position Offset : ");
-  Serial.print(nNextAvailablePosition);
-  Serial.print("Page:  ");
-  Serial.println(nPage);      
 
-  
+ 
+/*
 
   //Add Header
   write_byte(nPage,nOffset,'H');
   nOffset++;
-
+    delay(10);  
   //Calculate number here  
   //Add Number
    write_byte(nPage,nOffset,'1');
    nOffset++;
+       delay(10);  
    write_byte(nPage,nOffset,'1');
    nOffset++;
+       delay(10);  
    write_byte(nPage,nOffset,'1');
    nOffset++;
   // '0','0','0'
@@ -330,10 +320,14 @@ void Write_Event(){
   //'0','1','3','0'
     write_byte(nPage,nOffset,(char)cFirstParameter[0]);
     nOffset++;
+        delay(10);  
+    
     write_byte(nPage,nOffset,(char)cFirstParameter[1]);
     nOffset++;
+        delay(10);  
     write_byte(nPage,nOffset,(char)cFirstParameter[2]);
     nOffset++;
+        delay(10);  
     write_byte(nPage,nOffset,(char)cFirstParameter[3]);
     nOffset++;
 
@@ -341,8 +335,10 @@ void Write_Event(){
   //'M','O','N'
     write_byte(nPage,nOffset,(char)cFirstParameter[4]);
     nOffset++;
+        delay(10);  
     write_byte(nPage,nOffset,(char)cFirstParameter[5]);
     nOffset++;
+        delay(10);  
     write_byte(nPage,nOffset,(char)cFirstParameter[6]);
     nOffset++;
   
@@ -351,140 +347,26 @@ void Write_Event(){
   //1
   write_byte(nPage,nOffset,(char)cFirstParameter[7]);
     nOffset++;
-    
+        delay(10);  
   
   //Add Output State
   //1
   write_byte(nPage,nOffset,(char)cFirstParameter[8]);
     nOffset++;
+        delay(10);  
 
   //Add nothing
   //incrementoffsert
   nOffset++;
+      delay(10);  
 
   //Add Tail
   //'T'
   write_byte(nPage,nOffset,'T');
+*/
+  read_page_ascii(0);
+  read_page_ascii(1); 
   
-  //'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T'
-
-
-/*
-//}While heere
-  for(nPage=0;nPage<2;nPage++){
-    _read_page(0, page_buffer);
-    Serial.println("Searching in new page");
-    //nOffset=0;
-    delay(500);
-    nOffset=0;
-
-    while(page_buffer[nOffset]=='H'){
-      Serial.print(nOffset);
-      Serial.print("-Position: ");
-      Serial.println((char)page_buffer[nOffset]);
-      Serial.print(nOffset);
-      Serial.print("-Position Available: ");
-      nNextAvailablePosition=nOffset;
-      Serial.println(nNextAvailablePosition);
-      nOffset=nOffset+16;  
-    }   
-  } */ 
-  
-    
-    /*do{
-      nOffset=nOffset+16;
-      Serial.print(nOffset);
-      Serial.print("-Position: ");
-      Serial.println((char)page_buffer[nOffset]);
-      Serial.print(nOffset);
-      Serial.print("-Position Available: ");
-      nNextAvailablePosition=nOffset;
-      Serial.println(nNextAvailablePosition);  
-    }while(page_buffer[nOffset]=='H');  
-  }*/
-  //Next line
-  
-/*
-  write_byte(0,nOffset,'H');
-  nOffset=nOffset+1;
-  Serial.print("Offset:  "); 
-   Serial.println(nOffset); 
-  write_byte(0,nOffset,'E');
-   nOffset=nOffset+1;
-   Serial.print("Offset:  "); 
-   Serial.println(nOffset); 
-  write_byte(0,nOffset,'L');
-   nOffset=nOffset+1;
-   Serial.print("Offset:  "); 
-   Serial.println(nOffset); 
-  write_byte(0,nOffset,'L');
-   nOffset=nOffset+1;
-   Serial.print("Offset:  "); 
-   Serial.println(nOffset); 
-  write_byte(0,nOffset,'O');
-   nOffset=nOffset+1;
-   Serial.print("Offset:  "); 
-   Serial.println(nOffset); 
-   */
-
- /* 
-
-  while(Array[nIndexArray]!=4 ){    
-    //Serial.print (Array[nIndexArray]);
-    write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
-    nIndexArray++;
-    nIndexOffset++;
-    
-    if(nIndexOffset>=255){
-      nIndexOffset=0;
-      nIndexPages++;    
-    } 
-  
-  }
-
-  
-  / * 
-   * while(Array[nIndexArray]!=4 ){    
-    //Serial.print (Array[nIndexArray]);
-    write_byte(nIndexPages,nIndexOffset,Array[nIndexArray]);
-    nIndexArray++;
-    nIndexOffset++;
-    
-    if(nIndexOffset>=255){
-      nIndexOffset=0;
-      nIndexPages++;    
-    }
-   * 
-   * 
-   * 
-   * 
-   * 
-   *  */
-  //Search for the next position available
-  
-  //Serial.println(page_buffer[nOffset]);
-
- 
- 
-  /*
-  Serial.println(page_buffer[nOffset]);
-  for(nPage=0;nPage<=1;nPage++){
-    _read_page(nPage, page_buffer);
-     Serial.println("Searching in new page");
-    for(nOffset=0;nOffset<255;nOffset=nOffset+16){
-      //Serial.print(nPage);
-      //Serial.print("-");
-      Serial.print(nOffset);
-      Serial.print("-Position: ");
-      Serial.println((char)page_buffer[nOffset]);
-      if (page_buffer[nOffset]!='H'){
-          Serial.print(nOffset);
-          Serial.print("-Position Available: ");
-          nNextAvailablePosition=nOffset;
-          Serial.println(nNextAvailablePosition);  
-        }     
-    } 
-  } */ 
 }
 
 void write_array(char Array[], int nPage){
@@ -566,6 +448,7 @@ void loop() {
       }
 
      else if (sCommand=="ReadPage") {
+        read_page(0);
         read_page(1);
    
       
@@ -573,17 +456,8 @@ void loop() {
 
     else if (sCommand=="WriteTemplate") {
         Serial.println("Writing Events");
-        char MyArray[177]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',
-                            'H','0','0','1','!','0','2','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','2','!','0','3','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','3','!','0','4','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','4','!','0','5','3','6','T','U','E','1','0','!','T',
-                            'H','0','0','5','!','0','6','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','6','!','0','7','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','7','!','0','8','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','8','!','0','9','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','9','!','1','0','3','5','T','U','E','1','0','!','T',
-                            'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T',4};
+        char MyArray[33]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',    
+                           'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T',4};
         write_array(MyArray,0);
         Serial.println("Done");
     }
