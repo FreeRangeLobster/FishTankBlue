@@ -252,6 +252,27 @@ void write_byte(word page, byte offset, byte databyte) {
   //Serial.println("Ready");
 }
 
+void write_bytes(word page, byte offset, byte Array[], int len) {
+  char buf[80];
+  byte page_data[256];
+  _read_page(page, page_data);
+  for(int i=0;i<=len;i++){
+      page_data[offset+i]=Array[i];
+  }
+
+  /*For debugging purposes
+  for (int i = 0; i < 16; ++i) {
+    for (int j = 0; j < 16; ++j) {
+      Serial.print((char)page_data[(i * 16) + j]);
+    }
+    Serial.println(i);  
+  }  
+  */
+  
+  _write_page(page, page_data);
+  Serial.println("Ready");
+}
+
 //Working here
 //AddEvent 0150TUE11;
 
@@ -288,82 +309,16 @@ void Write_Event(){
       //  Serial.println("Page");  
       //}
       delay(100);       
-    }      
+    }
 
 
- 
-/*
+  byte Array[10]={'H','E','L','L','O'};
+  write_bytes(0,nOffset,Array,4);
 
-  //Add Header
-  write_byte(nPage,nOffset,'H');
-  nOffset++;
-    delay(10);  
-  //Calculate number here  
-  //Add Number
-   write_byte(nPage,nOffset,'1');
-   nOffset++;
-       delay(10);  
-   write_byte(nPage,nOffset,'1');
-   nOffset++;
-       delay(10);  
-   write_byte(nPage,nOffset,'1');
-   nOffset++;
-  // '0','0','0'
 
 
  
-  
-  //Add nothing
-  nOffset++;
-  
-  //Add Time
-  //'0','1','3','0'
-    write_byte(nPage,nOffset,(char)cFirstParameter[0]);
-    nOffset++;
-        delay(10);  
-    
-    write_byte(nPage,nOffset,(char)cFirstParameter[1]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[2]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[3]);
-    nOffset++;
 
-  //Add Day
-  //'M','O','N'
-    write_byte(nPage,nOffset,(char)cFirstParameter[4]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[5]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[6]);
-    nOffset++;
-  
-  
-  //Add Output
-  //1
-  write_byte(nPage,nOffset,(char)cFirstParameter[7]);
-    nOffset++;
-        delay(10);  
-  
-  //Add Output State
-  //1
-  write_byte(nPage,nOffset,(char)cFirstParameter[8]);
-    nOffset++;
-        delay(10);  
-
-  //Add nothing
-  //incrementoffsert
-  nOffset++;
-      delay(10);  
-
-  //Add Tail
-  //'T'
-  write_byte(nPage,nOffset,'T');
-*/
   read_page_ascii(0);
   read_page_ascii(1); 
   
@@ -415,6 +370,10 @@ void setup() {
   sFirstParameter.reserve(50);
   sSecondParameter.reserve(50);
   sThirdParameter.reserve(50);
+
+
+  //byte Array[10]={'N','E','W','L','I'};
+  //write_bytes(0,60,Array,4);
 
 }
 
@@ -579,3 +538,78 @@ void serialEvent() {
       }
  * /
  */
+
+
+
+ /*
+
+  //Add Header
+  write_byte(nPage,nOffset,'H');
+  nOffset++;
+    delay(10);  
+  //Calculate number here  
+  //Add Number
+   write_byte(nPage,nOffset,'1');
+   nOffset++;
+       delay(10);  
+   write_byte(nPage,nOffset,'1');
+   nOffset++;
+       delay(10);  
+   write_byte(nPage,nOffset,'1');
+   nOffset++;
+  // '0','0','0'
+
+
+ 
+  
+  //Add nothing
+  nOffset++;
+  
+  //Add Time
+  //'0','1','3','0'
+    write_byte(nPage,nOffset,(char)cFirstParameter[0]);
+    nOffset++;
+        delay(10);  
+    
+    write_byte(nPage,nOffset,(char)cFirstParameter[1]);
+    nOffset++;
+        delay(10);  
+    write_byte(nPage,nOffset,(char)cFirstParameter[2]);
+    nOffset++;
+        delay(10);  
+    write_byte(nPage,nOffset,(char)cFirstParameter[3]);
+    nOffset++;
+
+  //Add Day
+  //'M','O','N'
+    write_byte(nPage,nOffset,(char)cFirstParameter[4]);
+    nOffset++;
+        delay(10);  
+    write_byte(nPage,nOffset,(char)cFirstParameter[5]);
+    nOffset++;
+        delay(10);  
+    write_byte(nPage,nOffset,(char)cFirstParameter[6]);
+    nOffset++;
+  
+  
+  //Add Output
+  //1
+  write_byte(nPage,nOffset,(char)cFirstParameter[7]);
+    nOffset++;
+        delay(10);  
+  
+  //Add Output State
+  //1
+  write_byte(nPage,nOffset,(char)cFirstParameter[8]);
+    nOffset++;
+        delay(10);  
+
+  //Add nothing
+  //incrementoffsert
+  nOffset++;
+      delay(10);  
+
+  //Add Tail
+  //'T'
+  write_byte(nPage,nOffset,'T');
+*/
