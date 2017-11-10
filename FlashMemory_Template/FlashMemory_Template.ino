@@ -326,7 +326,7 @@ void loop(void) {
     else if (g_command.startsWith("erase_sector")) {
       int pos = g_command.indexOf(" ");
       if (pos == -1) {
-        Serial.println("Error: Command 'read_page' expects an int operand");
+        Serial.println("Error: Command 'erase_sector' expects an int operand");
       } else {
         word page = (word)g_command.substring(pos).toInt();
         erase_sector(page);

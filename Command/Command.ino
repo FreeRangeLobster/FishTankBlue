@@ -28,11 +28,8 @@ char cTemp;
 
 String sCommand;
 String sFirstParameter;
-String sSecondParameter;
-String sThirdParameter;
 char cFirstParameter[16];
-char cSecondParameter[16];
-char cThirdParameter[16];
+
 
 int nParameter=0;
 
@@ -115,7 +112,6 @@ void _read_page(word page_number, byte *page_buffer) {
 }
 
 
-
  
 /*
  * See the timing diagram in section 9.2.21 of the
@@ -142,7 +138,6 @@ void _write_page(word page_number, byte *page_buffer) {
   */
   not_busy();
 }
-
 
 // Deletes 4KB sector
 void _erase_sector(word sector){
@@ -241,15 +236,16 @@ void erase_sector(unsigned int sector){//256 sectors of 4k bytes, 1 sector = 16 
   Serial.println("ready");
 }
 
+
 void write_byte(word page, byte offset, byte databyte) {
   char buf[80];
-  //sprintf(buf, "command: write_byte(%04xh, %04xh, %02xh)", page, offset, databyte);
-  //Serial.println(buf);
+  sprintf(buf, "command: write_byte(%04xh, %04xh, %02xh)", page, offset, databyte);
+  Serial.println(buf);
   byte page_data[256];
   _read_page(page, page_data);
   page_data[offset] = databyte;
   _write_page(page, page_data);
-  //Serial.println("Ready");
+  Serial.println("Ready");
 }
 
 void write_bytes(word page, byte offset, byte Array[], int len) {
@@ -277,47 +273,54 @@ void write_bytes(word page, byte offset, byte Array[], int len) {
 //AddEvent 0150TUE11;
 
 void Write_Event(){
-  int nPage=0;
-  int nOffset=0;
+  word nPage=0;
+  byte nOffset=0;
   byte page_buffer[256];
-  char cFirstParameter[16];
-  int nNextAvailablePosition=0;
+  byte cFirstParameter[16];
   //char cEvent[16];
+  Serial.println("Check point 1");
   Serial.print("Parameter1 in String:  ");
   Serial.println(sFirstParameter);
   sFirstParameter.toCharArray(cFirstParameter,16);
 
   Serial.println("Coping Across to char array");
   Serial.print("Array:  -");
+  
   _read_page(0, page_buffer);
-
+  Serial.println("Check point 2");
+  
   nOffset=0;
   nPage=0;
+
+
   
   while(page_buffer[nOffset]=='H'){
+      Serial.println("Check point 3");
       Serial.println("Loop");
       nOffset=nOffset+16;
       delay(10); 
       Serial.print("-Position Available: ");
       delay(10);
       Serial.println(nOffset);
-      //if (nOffset>255){
-      //  nPage++;
-      //  nOffset=0;
-      //  _read_page(nPage, page_buffer);
-      //  delay(10); 
-      //  Serial.println("Page");  
-      //}
+      if (nOffset>=241){
+        nPage++;
+        nOffset=0;
+        _read_page(nPage, page_buffer);
+        delay(10); 
+        Serial.println("Page");  
+      }
       delay(100);       
     }
-
-
+  
+  Serial.println("Check point 3");
   byte Array[10]={'H','E','L','L','O'};
-  write_bytes(0,nOffset,Array,4);
+  write_bytes(0,nOffset,cFirstParameter,4);
+  Serial.println("Check point 4");
 
+  //Add Tail
+  //'T'
+  //write_byte(nPage,nOffset,'T');
 
-
- 
 
   read_page_ascii(0);
   read_page_ascii(1); 
@@ -368,9 +371,6 @@ void setup() {
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
   sFirstParameter.reserve(50);
-  sSecondParameter.reserve(50);
-  sThirdParameter.reserve(50);
-
 
   //byte Array[10]={'N','E','W','L','I'};
   //write_bytes(0,60,Array,4);
@@ -386,7 +386,9 @@ void loop() {
 
     if(sCommand=="AddEvent"){
       Serial.println("AddEvent-OK");
-      Serial.println("Checking parameter :");      
+      delay(1000);
+      Serial.println("Checking parameter :"); 
+      delay(1000);     
       Write_Event();
       Serial.println("All good until here"); 
       }
@@ -432,7 +434,6 @@ void loop() {
     
     sCommand = "";
     sFirstParameter="";
-    sSecondParameter="";
     stringComplete = false;
   }
 
@@ -454,20 +455,18 @@ void serialEvent() {
       nParameter=0;
       sCommand.trim();
       sFirstParameter.trim();
-      sSecondParameter.trim(); 
+      Serial.flush();
+      
    }
    else {
       if (nParameter==0){
           sCommand += inChar;
         }
-       if (nParameter==1){
+      
+      if (nParameter==1){
           sFirstParameter += inChar;
           nIndex++;
-        }
-
-       if (nParameter==2){
-          sSecondParameter += inChar;
-        }
+       }
    }    
    
    if(inChar==' ') {
@@ -480,21 +479,6 @@ void serialEvent() {
 
 
 /*
- * 
- * else if(sCommand=="ShowEvents"){
-      Serial.println("ShowEvents-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      read_page_ascii(0);
-      }
-
-      else if(sCommand=="EraseEvents"){
-      Serial.println("EraseEvents-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      erase_sector(0);
-      }
-
 
       else if (sCommand="writeTemplate") {
         Serial.println("Writing Events");
@@ -512,104 +496,4 @@ void serialEvent() {
         write_array(MyArray,0);
         Serial.println("Done");
     }
-
-      else if(sCommand=="CheckForEvents"){
-      Serial.println("CheckForEvents-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      }
-      
-      else if(sCommand=="CheckEvent"){
-      Serial.println("CheckEvent-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      }
-
-      else if(sCommand=="DisableEvent"){
-      Serial.println("DisableEvent-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      }
-
-      else if(sCommand=="a"){
-      Serial.println("Test-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      }
- * /
- */
-
-
-
- /*
-
-  //Add Header
-  write_byte(nPage,nOffset,'H');
-  nOffset++;
-    delay(10);  
-  //Calculate number here  
-  //Add Number
-   write_byte(nPage,nOffset,'1');
-   nOffset++;
-       delay(10);  
-   write_byte(nPage,nOffset,'1');
-   nOffset++;
-       delay(10);  
-   write_byte(nPage,nOffset,'1');
-   nOffset++;
-  // '0','0','0'
-
-
- 
-  
-  //Add nothing
-  nOffset++;
-  
-  //Add Time
-  //'0','1','3','0'
-    write_byte(nPage,nOffset,(char)cFirstParameter[0]);
-    nOffset++;
-        delay(10);  
-    
-    write_byte(nPage,nOffset,(char)cFirstParameter[1]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[2]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[3]);
-    nOffset++;
-
-  //Add Day
-  //'M','O','N'
-    write_byte(nPage,nOffset,(char)cFirstParameter[4]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[5]);
-    nOffset++;
-        delay(10);  
-    write_byte(nPage,nOffset,(char)cFirstParameter[6]);
-    nOffset++;
-  
-  
-  //Add Output
-  //1
-  write_byte(nPage,nOffset,(char)cFirstParameter[7]);
-    nOffset++;
-        delay(10);  
-  
-  //Add Output State
-  //1
-  write_byte(nPage,nOffset,(char)cFirstParameter[8]);
-    nOffset++;
-        delay(10);  
-
-  //Add nothing
-  //incrementoffsert
-  nOffset++;
-      delay(10);  
-
-  //Add Tail
-  //'T'
-  write_byte(nPage,nOffset,'T');
 */
