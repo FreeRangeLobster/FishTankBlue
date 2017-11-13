@@ -28,7 +28,7 @@ char cTemp;
 
 String sCommand;
 String sFirstParameter;
-char cFirstParameter[16];
+
 
 
 int nParameter=0;
@@ -106,6 +106,7 @@ void _read_page(word page_number, byte *page_buffer) {
   SPI.transfer(0);
   for (int i = 0; i < 256; ++i) {
     page_buffer[i] = SPI.transfer(0);
+    delay(2);
   }
   digitalWrite(SS, HIGH);
   not_busy();
@@ -118,6 +119,7 @@ void _read_page(word page_number, byte *page_buffer) {
  * data sheet, "Page Program (02h)".
  */
 void _write_page(word page_number, byte *page_buffer) {
+  Serial.println("_write_Page");
   digitalWrite(SS, HIGH);
   digitalWrite(SS, LOW);  
   SPI.transfer(WB_WRITE_ENABLE);
@@ -129,6 +131,8 @@ void _write_page(word page_number, byte *page_buffer) {
   SPI.transfer(0);
   for (int i = 0; i < 256; ++i) {
     SPI.transfer(page_buffer[i]);
+    //Serial.println((char)page_buffer[i]);
+    delay(10);
   }
   digitalWrite(SS, HIGH);
   /* See notes on rev 2
@@ -254,67 +258,83 @@ void write_bytes(word page, byte offset, byte Array[], int len) {
   _read_page(page, page_data);
   for(int i=0;i<=len;i++){
       page_data[offset+i]=Array[i];
+      delay(10);
   }
 
-  /*For debugging purposes
+  //For debugging purposes
   for (int i = 0; i < 16; ++i) {
     for (int j = 0; j < 16; ++j) {
       Serial.print((char)page_data[(i * 16) + j]);
     }
     Serial.println(i);  
   }  
-  */
+
+  Serial.println("WriteBytes debugging"); 
   
   _write_page(page, page_data);
   Serial.println("Ready");
+  
+  
 }
 
 //Working here
-//AddEvent 0150TUE11;
+//AddEvent H0010150TUE11T;
+//AddEvent Heyllama;
 
 void Write_Event(){
   word nPage=0;
   byte nOffset=0;
   byte page_buffer[256];
-  byte cFirstParameter[16];
+  char cFirstParameter[16];
+  byte byFirstParameter[16];
   //char cEvent[16];
   Serial.println("Check point 1");
+  delay(200);
   Serial.print("Parameter1 in String:  ");
   Serial.println(sFirstParameter);
   sFirstParameter.toCharArray(cFirstParameter,16);
-
+  delay(200);
   Serial.println("Coping Across to char array");
   Serial.print("Array:  -");
   
   _read_page(0, page_buffer);
-  Serial.println("Check point 2");
+  Serial.println("Check point 2: Conversion");
+
+  for(int i=0;i<=13;i++){
+    byFirstParameter[i]=cFirstParameter[i];
+    Serial.print(byFirstParameter[i]);
+    }
   
   nOffset=0;
   nPage=0;
-
+ Serial.println("Check point 2: End of Conversion");
 
   
   while(page_buffer[nOffset]=='H'){
-      Serial.println("Check point 3");
-      Serial.println("Loop");
+      //Serial.println("Check point 3");
+      //Serial.println("Loop");
       nOffset=nOffset+16;
       delay(10); 
-      Serial.print("-Position Available: ");
+      //Serial.print("-Position Available: ");
       delay(10);
-      Serial.println(nOffset);
-      if (nOffset>=241){
-        nPage++;
-        nOffset=0;
-        _read_page(nPage, page_buffer);
-        delay(10); 
-        Serial.println("Page");  
-      }
+      //Serial.println(nOffset);
+      //if (nOffset>=255){
+      //  nPage++;
+      //  nOffset=0;
+      //  _read_page(nPage, page_buffer);
+      //  delay(10); 
+      //  Serial.println("Page");  
+      //}
       delay(100);       
     }
   
+  Serial.println(nOffset);
+  Serial.flush();
   Serial.println("Check point 3");
-  byte Array[10]={'H','E','L','L','O'};
-  write_bytes(0,nOffset,cFirstParameter,4);
+  delay(500);
+  //byte Array[10]={'H','E','L','L','O'};
+  write_bytes(0,nOffset,byFirstParameter,14);
+  delay(1000);
   Serial.println("Check point 4");
 
   //Add Tail
@@ -322,10 +342,32 @@ void Write_Event(){
   //write_byte(nPage,nOffset,'T');
 
 
-  read_page_ascii(0);
-  read_page_ascii(1); 
+  //read_page_ascii(0);
+  //read_page_ascii(1); 
   
 }
+
+void Write_FullArray(){
+  byte FullArray[256]={'H','0','0','0','2','3','5','0','M','O','N','1','1','T','X','X',
+  'H','0','0','1','2','3','5','5','T','U','E','1','0','T','X','X',
+  'H','0','0','2','0','0','0','0','W','E','D','1','1','T','X','X',
+  'H','0','0','3','0','0','0','5','T','H','U','1','0','T','X','X',
+  'H','0','0','4','0','0','1','0','F','R','I','1','1','T','X','X',
+  'H','0','0','5','0','0','1','5','S','A','T','1','0','T','X','X',
+  'H','0','0','6','0','0','2','0','S','U','N','1','1','T','X','X',
+  'H','0','0','7','0','0','2','5','M','O','N','1','0','T','X','X',
+  'H','0','0','8','0','0','3','0','T','U','E','1','1','T','X','X',
+  'H','0','0','9','0','0','3','5','W','E','D','1','0','T','X','X',
+  'H','0','1','0','0','0','4','0','T','H','U','1','1','T','X','X',
+  'H','0','1','1','0','0','4','5','F','R','I','1','0','T','X','X',
+  'H','0','1','2','0','0','5','0','S','A','T','1','1','T','X','X',
+  'H','0','1','3','0','0','5','5','S','U','N','1','0','T','X','X',
+  'H','0','1','4','0','1','0','0','M','O','N','1','1','T','X','X',
+  'H','0','1','5','0','1','0','5','T','U','E','1','0','T','X','X'};
+  _write_page(0, FullArray);
+}
+
+
 
 void write_array(char Array[], int nPage){
   int i=0;
@@ -384,21 +426,21 @@ void loop() {
     Serial.println(sCommand);
     // clear the string:
 
-    if(sCommand=="AddEvent"){
+    if(sCommand=="ShowEvents"){
+      Serial.println("ShowEvents-OK");
+      stringLenght=sCommand.length();
+      Serial.println(stringLenght);
+      read_page_ascii(0);
+      read_page_ascii(1);
+      }
+    
+    else if(sCommand=="AddEvent"){
       Serial.println("AddEvent-OK");
       delay(1000);
       Serial.println("Checking parameter :"); 
       delay(1000);     
       Write_Event();
       Serial.println("All good until here"); 
-      }
-
-    else if(sCommand=="ShowEvents"){
-      Serial.println("ShowEvents-OK");
-      stringLenght=sCommand.length();
-      Serial.println(stringLenght);
-      read_page_ascii(0);
-      read_page_ascii(1);
       }
 
     else if(sCommand=="EraseEvents"){
@@ -408,18 +450,17 @@ void loop() {
       erase_sector(0);
       }
 
-     else if (sCommand=="ReadPage") {
-        read_page(0);
-        read_page(1);
-   
-      
+    else if (sCommand=="ReadPage") {
+      read_page(0);
+      read_page(1);
     } 
 
     else if (sCommand=="WriteTemplate") {
         Serial.println("Writing Events");
-        char MyArray[33]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',    
-                           'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T',4};
-        write_array(MyArray,0);
+        //char MyArray[33]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',    
+        //                    'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T',4};
+        //write_array(MyArray,0);
+        Write_FullArray();
         Serial.println("Done");
     }
 
@@ -427,14 +468,19 @@ void loop() {
       Serial.println("Not Found");
       stringLenght=sCommand.length();
       Serial.println(stringLenght);
-      cTemp=sCommand.charAt(1);
+      //cTemp=sCommand.charAt(1);
       Serial.println("Character: ");
       Serial.println(cTemp,DEC);
+      sCommand = "";
+      sFirstParameter="";
+      stringComplete = false;
+      Serial.flush();
       }
     
     sCommand = "";
     sFirstParameter="";
     stringComplete = false;
+    Serial.flush();
   }
 
   digitalWrite(LED_BUILTIN, LOW);
