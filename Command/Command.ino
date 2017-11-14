@@ -368,6 +368,135 @@ void Write_FullArray(){
 }
 
 
+//.nID=ConvertToInt(pbuffer[i],pbuffer[i+1],pbuffer[i+2]
+int ConvertToInt(char cBit2,  char cBit1, char cBit0  ){
+  //Calculates the integer from a 3 digit string
+  //There is no error handling aiming to reduce size of the program
+  //MSB= cBit2, LSB cBit0
+  int nResult=0;
+  nResult=  ((cBit2-48)*100) + ((cBit1- 48)*10) + (cBit0- 48);
+  return nResult;
+ }
+
+
+
+//if (IntToDay(Event[i].nDay,cNumbers)==true)
+boolean IntToDay( int nDay,char *cDay){
+  
+  switch(nDay){
+    case 1:
+      cDay[0]='M';
+      cDay[1]='O';
+      cDay[2]='N';
+      return true;
+    break;
+
+    case 2:
+      cDay[0]='T';
+      cDay[1]='U';
+      cDay[2]='E';
+      return true;
+    break;
+
+    case 3:
+      cDay[0]='W';
+      cDay[1]='E';
+      cDay[2]='D';
+      return true;
+    break;
+
+    case 4:
+      cDay[0]='T';
+      cDay[1]='H';
+      cDay[2]='U';
+      return true;
+    break;
+
+    case 5:
+      cDay[0]='F';
+      cDay[1]='R';
+      cDay[2]='I';
+      return true;
+    break;
+
+    case 6:
+      cDay[0]='S';
+      cDay[1]='A';
+      cDay[2]='T';
+      return true;
+    break;
+
+    case 7:
+      cDay[0]='S';
+      cDay[1]='U';
+      cDay[2]='N';
+      return true;
+    break;
+
+    default:
+      return false;
+    break;
+    
+    }
+  
+  }
+
+
+
+
+
+//Current date= '0','0','1','5','S','A','T'
+void CheckEvent(int nHour, int nMinutes, int Day){
+  word nPage=0;
+  byte nOffset=0;
+  byte page_buffer[256];
+  
+  //Read Memory
+
+  //Loop for checking
+  //Convert minutes, days and hour
+  //if nHour=nhour_Memory ,nDay=nDay_Memory ,  if nMinutes_Memory<nMinutes<nMinutes_Memory , 
+    //Update Output
+  //Endloop
+  
+/*  
+ *    if 
+ *    'H','0','0','5','0','0','1','5','S','A','T','1','0','T','X','X',
+ *    
+ *   -Get hour,minute,Day
+ *   
+ */
+  
+   _read_page(nPage, page_buffer);
+  while(page_buffer[nOffset]=='H'){
+
+    //  if (page_buffer[nOffset]==CurrentDate[0] &&
+    //      page_buffer[nOffset]==CurrentDate[1]){
+    //        //Update output
+    //   }
+  
+          
+      
+      //Serial.println("Check point 3");
+      //Serial.println("Loop");
+      nOffset=nOffset+16;
+      delay(10); 
+      //Serial.print("-Position Available: ");
+      delay(10);
+      //Serial.println(nOffset);
+      //if (nOffset>=255){
+      //  nPage++;
+      //  nOffset=0;
+      //  _read_page(nPage, page_buffer);
+      //  delay(10); 
+      //  Serial.println("Page");  
+      //}
+      delay(100);       
+    }
+ 
+
+}
+
 
 void write_array(char Array[], int nPage){
   int i=0;
@@ -523,23 +652,3 @@ void serialEvent() {
   }   
 }
 
-
-/*
-
-      else if (sCommand="writeTemplate") {
-        Serial.println("Writing Events");
-        char MyArray[600]={ 'H','0','0','0','!','0','1','3','0','M','O','N','1','1','!','T',
-                            'H','0','0','1','!','0','2','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','2','!','0','3','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','3','!','0','4','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','4','!','0','5','3','6','T','U','E','1','0','!','T',
-                            'H','0','0','5','!','0','6','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','6','!','0','7','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','7','!','0','8','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','8','!','0','9','3','5','T','U','E','1','0','!','T',
-                            'H','0','0','9','!','1','0','3','5','T','U','E','1','0','!','T',
-                            'H','0','1','0','!','1','2','3','5','T','U','E','1','0','!','T'};
-        write_array(MyArray,0);
-        Serial.println("Done");
-    }
-*/
